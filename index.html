@@ -3275,51 +3275,170 @@ const foodDBEntries=[
 ];
 
 // fooddbは動物名がひらがな（にわとり・ぶた・うし）なので正規化マップ
-const FOODDB_NORMALIZE = [
-  [/ほうれん草/, 'ほうれんそう'],
-  [/玉ねぎ|玉葱/, 'たまねぎ'],
-  [/長ねぎ|長葱/, 'ねぎ'],
+// ── 食材名 表記揺れ正規化テーブル ───────────────────────────
+// 漢字・カタカナ・別名 → built-inDBキーまたはfoodDB検索語に正規化
+const FOOD_ALIASES = [
+  // 野菜類
+  [/人参|ニンジン/,                    'にんじん'],
+  [/牛蒡|ゴボウ/,                      'ごぼう'],
+  [/南瓜|カボチャ/,                    'かぼちゃ'],
+  [/茄子|ナス(?!め)|なすび/,           'なす'],
+  [/胡瓜|キュウリ/,                    'きゅうり'],
+  [/馬鈴薯|ポテト|ジャガイモ|じゃが芋|ジャガ芋/, 'じゃがいも'],
+  [/薩摩芋|サツマイモ|サツマ芋|さつま芋/, 'さつまいも'],
+  [/玉葱|タマネギ/,                    '玉ねぎ'],
+  [/長葱|ナガネギ|白ねぎ|白葱/,        '長ねぎ'],
+  [/ホウレンソウ|ほうれんそう/,        'ほうれん草'],
+  [/椎茸|シイタケ/,                    'しいたけ'],
+  [/えのきたけ|エノキタケ|エノキ(?!ダケ)/, 'えのき'],
+  [/シメジ|ぶなしめじ/,               'しめじ'],
+  [/エリンギ/,                         'えりんぎ'],
+  [/舞茸|マイタケ/,                    'まいたけ'],
+  [/小松菜|コマツナ/,                  'こまつな'],
+  [/ニラ(?!みそ)/,                     'にら'],
+  [/大根|ダイコン/,                    'だいこん'],
+  [/蕪|カブ(?!ら)/,                    'かぶ'],
+  [/蓮根|レンコン/,                    'れんこん'],
+  [/里芋|サトイモ/,                    'さといも'],
+  [/山芋|ヤマイモ|長芋|ナガイモ|大和芋/, 'やまいも'],
+  [/トウモロコシ|とうもろこし|コーン(?!スターチ|ド)/, 'とうもろこし'],
+  [/ブロッコリ(?!ー)/,                 'ブロッコリー'],
+  [/キャベジ/,                         'キャベツ'],
+  [/インゲン(?!豆)|さやいんげん/,      'さやいんげん'],
+  [/オクラ/,                           'おくら'],
+  [/パプリカ/,                         'パプリカ'],
+  [/セロリ/,                           'セロリ'],
+  [/水菜|ミズナ/,                      'みずな'],
+  [/春菊|シュンギク/,                  'しゅんぎく'],
+  [/豆苗|トウミョウ/,                  'とうみょう'],
+  [/枝豆|エダマメ/,                    '枝豆'],
+  [/そら豆|ソラマメ/,                  'そらまめ'],
+  [/グリーンピース/,                   'グリーンピース'],
+  // 芋・根菜
+  [/タケノコ|たけのこ|筍/,             'たけのこ'],
+  [/ゆりね|百合根|ユリネ/,             'ゆりね'],
+  // 果物
+  [/りんご|リンゴ|林檎/,               'りんご'],
+  [/みかん|ミカン|蜜柑/,               'うんしゅうみかん'],
+  [/バナナ/,                           'バナナ'],
+  [/いちご|イチゴ|苺/,                 'いちご'],
+  [/もも|桃(?!肉|バラ|ひき)/,          'もも'],
+  [/ぶどう|ブドウ|葡萄/,               'ぶどう'],
+  [/なし|梨|ナシ/,                     'なし'],
+  [/キウイ|キウイフルーツ/,            'キウイフルーツ'],
+  [/レモン/,                           'レモン'],
+  [/グレープフルーツ/,                 'グレープフルーツ'],
+  [/スイカ|西瓜/,                      'すいか'],
+  [/メロン/,                           'メロン'],
+  // 魚介類（漢字・別名 → built-inキーまたはfoodDB語）
+  [/鮭|サケ(?![・・])/,               'さけ'],
+  [/鯖|サバ/,                          'さば'],
+  [/鱈|タラ/,                          'タラ'],     // built-in: タラ
+  [/鮪|マグロ/,                        'まぐろ'],   // built-in: まぐろ
+  [/鰯|イワシ/,                        'いわし'],
+  [/鰤|ブリ/,                          'ぶり'],
+  [/秋刀魚|サンマ/,                    'さんま'],
+  [/鰺|アジ/,                          'あじ'],
+  [/海老|蝦|エビ/,                     'えび'],     // built-in: えび
+  [/烏賊|イカ(?!な|わし)/,             'いか'],
+  [/蛸|タコ/,                          'たこ'],
+  [/蟹|カニ/,                          'かに'],
+  [/蛤|アサリ/,                        'あさり'],
+  [/帆立|ホタテ/,                      'ほたて'],
+  [/牡蠣|カキ(?!氷|酢|色)/,           'かき'],
+  [/鯛|タイ(?!焼)/,                    'たい'],
+  [/鮎|アユ/,                          'あゆ'],
+  [/鰻|ウナギ/,                        'うなぎ'],
+  [/平目|ヒラメ/,                      'ひらめ'],
+  [/鰈|カレイ/,                        'かれい'],
+  [/ししゃも|シシャモ/,                'ししゃも'],
+  [/蛍いか|ホタルイカ/,               'ほたるいか'],
+  [/たらこ|タラコ/,                    'たらこ'],
+  [/明太子|めんたいこ/,               'たらこ 辛子めんたいこ'],
+  [/しらす|シラス/,                    'しらす干し'],
+  [/ちりめんじゃこ|ちりめん/,         'しらす干し'],
+  // 大豆製品
+  [/豆苗|とうみょう/,                  'とうみょう'],
+  [/納豆/,                             '糸引き納豆'],
+  [/厚揚げ|あつあげ/,                  '生揚げ'],
+  [/油揚げ|あぶらあげ/,               '油揚げ'],
+  // 調味料・香辛料
+  [/生姜|ジンジャー|ショウガ/,         'しょうが'],
+  [/大蒜|ガーリック|ニンニク/,         'にんにく'],
+  [/胡椒|ペッパー/,                    'こしょう'],
+  [/唐辛子|トウガラシ|チリ(?!ソース)/, 'とうがらし'],
+  [/わさび|ワサビ|山葵/,              'わさび'],
+  [/からし|カラシ|芥子/,              'からし'],
+  [/パセリ/,                           'パセリ'],
+  [/バジル/,                           'バジル'],
+  [/ローズマリー/,                     'ローズマリー'],
+  // 穀物・麺類
+  [/スパゲッティ|スパゲティ|スパゲッティー/, 'パスタ'],
+  [/中華麺|ラーメン麺/,               'ゆで中華めん'],
+  [/そうめん|素麺|ソーメン/,          'そうめん'],
+  [/春雨|ハルサメ/,                    'はるさめ'],
+  [/餃子の皮|ぎょうざの皮/,          'ぎょうざ 皮'],
+  // 乳製品
+  [/チーズ(?!ケーキ)/,                'チーズ'],
+  [/ヨーグルト/,                       'ヨーグルト'],
+  [/クリームチーズ/,                   'クリームチーズ'],
 ];
+
+// foodDB内での特定エントリへのダイレクトマッピング
+// 一般名 → あいまい検索を避けるための具体名
+const FOODDB_DIRECT = {
+  'さけ':     'しろさけ',        // しろさけ 生
+  'いか':     'するめいか',      // するめいか 生（すいかに引っかからないよう）
+  'たこ':     'まだこ',          // まだこ 生
+  'さば':     'まさば',          // まさば 生
+  'いわし':   'まいわし',        // まいわし 生
+  'あじ':     'まあじ',          // まあじ 皮つき 生
+  'ぶり':     'ぶり 成魚',       // ぶり 成魚 生（indexOf>4問題を解決）
+  'さんま':   'さんま',          // さんま 皮つき 生
+  'しょうが': 'しょうが 根茎 皮なし',  // 葉しょうがを避ける
+  'にんにく': 'にんにく りん茎', // ぎょうじゃにんにくを避ける
+  'だいこん': 'だいこん 根 皮つき',    // 葉だいこん・かいわれを避ける
+  'さといも': 'さといも 球茎',
+  'かき':     'かき 養殖 生',
+  'たい':     'まだい 天然 生',
+  'あゆ':     'あゆ 天然 生',
+  'ひらめ':   'ひらめ 天然 生',
+  'かれい':   'まがれい 生',
+  'うなぎ':   'うなぎ 養殖 生',
+  'たらこ':   'たらこ 生',
+  'こまつな': 'こまつな 葉',
+  'なす':     'なす 果実',
+  'にら':     'にら 葉',
+  '糸引き納豆': '糸引き納豆',
+};
+
+function applyFoodAliases(name) {
+  for (const [pat, rep] of FOOD_ALIASES) {
+    if (pat.test(name)) return name.replace(pat, rep);
+  }
+  return name;
+}
 
 // 肉類: ユーザーの入力を [species, cut] トークンに分解して複合検索
 const MEAT_SPECIES = [
   [/鶏|とり肉|チキン|手羽/, 'にわとり'],
-  [/豚(?!足)/, 'ぶた'],
-  [/牛(?!乳|蒡)/, 'うし'],
+  [/豚(?!足)/,              'ぶた'],
+  [/牛(?!乳|蒡)/,           'うし'],
 ];
 const MEAT_CUTS = [
-  [/もも肉|もも/, 'もも'],
-  [/むね肉|むね/, 'むね'],
-  [/ささみ/, 'ささみ'],
-  [/バラ肉|ばら肉|バラ/, 'ばら'],
-  [/ロース/, 'ロース'],
-  [/かた肉|かた/, 'かた'],
-  [/ひき肉|挽き肉/, 'ひき肉'],
-  [/手羽先/, '手羽さき'],
-  [/手羽元/, '手羽もと'],
-  [/手羽/, '手羽'],
-  [/レバー/, 'レバー'],
-  [/ハツ|心臓/, 'ハツ'],
+  [/もも肉|もも(?!桃)/,    'もも'],
+  [/むね肉|むね/,           'むね'],
+  [/ささみ/,                'ささみ'],
+  [/バラ肉|ばら肉|バラ/,   'ばら'],
+  [/ロース/,                'ロース'],
+  [/かた肉|かた/,           'かた'],
+  [/ひき肉|挽き肉/,         'ひき肉'],
+  [/手羽先/,                '手羽さき'],
+  [/手羽元/,                '手羽もと'],
+  [/手羽/,                  '手羽'],
+  [/レバー/,                'レバー'],
+  [/ハツ|心臓/,             'ハツ'],
 ];
-
-function normalizeForFoodDB(name) {
-  // 肉類を複数キーワードに分解して返す
-  for (const [spPat, spRep] of MEAT_SPECIES) {
-    if (spPat.test(name)) {
-      for (const [cutPat, cutRep] of MEAT_CUTS) {
-        if (cutPat.test(name)) {
-          return { type: 'meat', species: spRep, cut: cutRep };
-        }
-      }
-      // 部位不明: 動物名だけ
-      return { type: 'meat', species: spRep, cut: null };
-    }
-  }
-  // 通常の正規化
-  let n = name;
-  for (const [pat, rep] of FOODDB_NORMALIZE) n = n.replace(pat, rep);
-  return { type: 'text', q: n };
-}
 
 // foodDBEntries: [name, kcal, protein, fat, carb, sodium_mg] の配列
 function pickRaw(list) {
@@ -3336,21 +3455,41 @@ function toNutrObj(e) {
   return { kcal: e[1], p: e[2], f: e[3], c: e[4], s: e[5] };
 }
 
-function findInFoodDB(name) {
-  const norm = normalizeForFoodDB(name);
+// qが単語境界で含まれるかチェック（「すいか」の中の「いか」を除外する）
+function wordIncludes(str, q) {
+  const idx = str.indexOf(q);
+  if (idx === -1) return false;
+  const before = idx > 0 ? str[idx - 1] : '';
+  return idx === 0 || before === ' ' || before === '）' || before === '＞' || before === ']';
+}
 
-  // ── 肉類: 動物種 + 部位の複合検索 ──────────────────────
-  if (norm.type === 'meat') {
-    let pool = foodDBEntries.filter(e => e[0].includes(norm.species));
-    if (norm.cut) pool = pool.filter(e => e[0].includes(norm.cut));
-    if (pool.length > 0) return toNutrObj(pickRaw(pool));
-    const fallback = foodDBEntries.filter(e => e[0].includes(norm.species));
-    if (fallback.length > 0) return toNutrObj(pickRaw(fallback));
-    return null;
+function findInFoodDB(name) {
+  // 肉類チェック（FOOD_ALIASESより先に判定）
+  for (const [spPat, spRep] of MEAT_SPECIES) {
+    if (spPat.test(name)) {
+      let cut = null;
+      for (const [cutPat, cutRep] of MEAT_CUTS) {
+        if (cutPat.test(name)) { cut = cutRep; break; }
+      }
+      let pool = foodDBEntries.filter(e => e[0].includes(spRep));
+      if (cut) pool = pool.filter(e => e[0].includes(cut));
+      if (pool.length > 0) return toNutrObj(pickRaw(pool));
+      const fb = foodDBEntries.filter(e => e[0].includes(spRep));
+      if (fb.length > 0) return toNutrObj(pickRaw(fb));
+      return null;
+    }
   }
 
-  // ── 通常テキスト検索 ──────────────────────────────────
-  const q = norm.q;
+  // 表記揺れ正規化
+  const q = applyFoodAliases(name);
+
+  // ダイレクトマッピング（あいまい検索を避ける）
+  const directKey = FOODDB_DIRECT[q];
+  if (directKey) {
+    const direct = foodDBEntries.filter(e => e[0].includes(directKey));
+    if (direct.length > 0) return toNutrObj(pickRaw(direct));
+  }
+
   // 1. 完全一致
   const exact = foodDBEntries.find(e => e[0] === q);
   if (exact) return toNutrObj(exact);
@@ -3363,12 +3502,9 @@ function findInFoodDB(name) {
     return tok.length >= 2 && tok.includes(q);
   });
   if (tok1.length > 0) return toNutrObj(pickRaw(tok1));
-  // 4. fooddb名全体にqが含まれる（先頭付近優先）
-  const contains = foodDBEntries.filter(e => e[0].includes(q));
-  if (contains.length > 0) {
-    const early = contains.filter(e => e[0].indexOf(q) <= 4);
-    return toNutrObj(pickRaw(early.length > 0 ? early : contains));
-  }
+  // 4. 単語境界マッチ（「すいか」の中の「いか」を除外）
+  const wordMatch = foodDBEntries.filter(e => wordIncludes(e[0], q));
+  if (wordMatch.length > 0) return toNutrObj(pickRaw(wordMatch));
   return null;
 }
 
@@ -3615,7 +3751,10 @@ function getNutrKey(name) {
 
 function calcNutrition(grams, name) {
   if (grams === null) return null;
-  const key = getNutrKey(name);
+  // 表記揺れ正規化（漢字・カタカナ変換）
+  const normName = applyFoodAliases(name);
+  // built-in DBを元の名前・正規化後の両方で検索
+  const key = getNutrKey(name) || (normName !== name ? getNutrKey(normName) : null);
   if (key) {
     const d = nutritionDB[key];
     return {
@@ -3627,7 +3766,7 @@ function calcNutrition(grams, name) {
     };
   }
   // フォールバック: 食品成分表DB（文部科学省2020年版）
-  const fd = findInFoodDB(name);
+  const fd = findInFoodDB(normName);
   if (fd) {
     return {
       kcal: fd.kcal*grams/100,
