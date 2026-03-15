@@ -438,13 +438,38 @@
     .recipe-item-meta { display: none; }
   }
 
-/* ── PRINT ───────────────────────────────── */
+  /* ── TIMER ───────────────────────────────── */
+  .timer-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .timer-add-row { display: flex; gap: 8px; align-items: center; padding: 14px 20px; flex-wrap: wrap; }
+  .timer-add-row input[type="text"]   { flex: 1; min-width: 120px; }
+  .timer-add-row input[type="number"] { width: 64px; }
+  .timer-list { display: flex; flex-direction: column; }
+  .timer-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; border-top: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .timer-item:hover { background: var(--bg3); }
+  .timer-name { flex: 1; font-size: 13px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .timer-display {
+    font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500;
+    min-width: 72px; text-align: center; letter-spacing: 0.05em;
+  }
+  .timer-display.running  { color: var(--accent); }
+  .timer-display.done     { color: #ff7b7b; animation: timerDone 0.6s ease infinite alternate; }
+  .timer-display.idle     { color: var(--text2); }
+  .timer-btns { display: flex; gap: 5px; flex-shrink: 0; }
+  .timer-ring { width: 36px; height: 36px; flex-shrink: 0; }
+  .timer-ring circle { transition: stroke-dashoffset 1s linear; }
+  @keyframes timerDone { from { opacity:1; } to { opacity:0.3; } }
+
+  /* ── PRINT ───────────────────────────────── */
   @media print {
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
     body { background: #fff; color: #111; font-size: 13px; }
 
-    header, #savedCard, #emptyState,
+    header, #savedCard, #emptyState, #timerCard,
     .action-row, .card-header .card-header-right,
     .btn-primary, .btn-save, .btn-ghost, .btn-alt, .btn-danger,
     .nutr-section, .notice, .hint,
@@ -725,6 +750,26 @@
     </div>
   </div>
 
+  <!-- TIMER CARD -->
+  <div class="card timer-card" id="timerCard">
+    <div class="card-header toggleable" onclick="toggleTimerPanel()">
+      <span class="card-title"><span class="dot" style="background:#6bffb8;"></span>調理タイマー</span>
+      <div class="card-header-right">
+        <span class="badge-count" id="timerCount">0</span>
+        <span class="chevron" id="timerChevron">▼</span>
+      </div>
+    </div>
+    <div class="collapse-body closed" id="timerBody" style="max-height:0;">
+      <div class="timer-add-row">
+        <input type="text" id="timerName" placeholder="名前（例：煮込み）" class="input" style="flex:1;min-width:100px;">
+        <input type="number" id="timerMin" placeholder="分" min="0" max="999" class="input" style="width:60px;">
+        <input type="number" id="timerSec" placeholder="秒" min="0" max="59"  class="input" style="width:60px;">
+        <button class="btn btn-primary" onclick="addTimer()" style="padding:8px 16px;">追加</button>
+      </div>
+      <div class="timer-list" id="timerList"></div>
+      <div id="timerEmpty" style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">タイマーを追加してください</div>
+    </div>
+  </div>
 
 </main>
 
@@ -2384,6 +2429,184 @@ function recalcCost(toPerson) {
     totalRow.style.display = 'none';
   }
 }
+
+// ══════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════
+
+const timers = [];   // { id, name, total, remaining, state:'idle'|'running'|'paused'|'done', intervalId }
+let _timerOpen = false;
+let _timerNotifGranted = false;
+
+function toggleTimerPanel() {
+  _timerOpen = !_timerOpen;
+  const body = document.getElementById('timerBody');
+  const chevron = document.getElementById('timerChevron');
+  if (_timerOpen) {
+    body.classList.remove('closed');
+    body.style.maxHeight = body.scrollHeight + 2000 + 'px';
+    chevron.textContent = '▲';
+    // Request notification permission on first open
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(p => { _timerNotifGranted = p === 'granted'; });
+    } else {
+      _timerNotifGranted = Notification.permission === 'granted';
+    }
+  } else {
+    body.classList.add('closed');
+    body.style.maxHeight = '0';
+    chevron.textContent = '▼';
+  }
+}
+
+function addTimer() {
+  const nameEl = document.getElementById('timerName');
+  const minEl  = document.getElementById('timerMin');
+  const secEl  = document.getElementById('timerSec');
+  const min = parseInt(minEl.value) || 0;
+  const sec = parseInt(secEl.value) || 0;
+  const total = min * 60 + sec;
+  if (total <= 0) { minEl.focus(); return; }
+
+  const id = Date.now();
+  const name = nameEl.value.trim() || `タイマー${timers.length + 1}`;
+  timers.push({ id, name, total, remaining: total, state: 'idle', intervalId: null });
+
+  nameEl.value = '';
+  minEl.value  = '';
+  secEl.value  = '';
+
+  renderTimers();
+  // Expand panel height after adding
+  const body = document.getElementById('timerBody');
+  body.style.maxHeight = body.scrollHeight + 500 + 'px';
+}
+
+function startTimer(id) {
+  const t = timers.find(x => x.id === id);
+  if (!t || t.state === 'running') return;
+  if (t.state === 'done') {
+    t.remaining = t.total;
+  }
+  t.state = 'running';
+  t.intervalId = setInterval(() => {
+    t.remaining--;
+    if (t.remaining <= 0) {
+      t.remaining = 0;
+      t.state = 'done';
+      clearInterval(t.intervalId);
+      t.intervalId = null;
+      onTimerDone(t);
+    }
+    updateTimerItem(t);
+  }, 1000);
+  updateTimerItem(t);
+}
+
+function pauseTimer(id) {
+  const t = timers.find(x => x.id === id);
+  if (!t || t.state !== 'running') return;
+  clearInterval(t.intervalId);
+  t.intervalId = null;
+  t.state = 'paused';
+  updateTimerItem(t);
+}
+
+function resetTimer(id) {
+  const t = timers.find(x => x.id === id);
+  if (!t) return;
+  clearInterval(t.intervalId);
+  t.intervalId = null;
+  t.remaining = t.total;
+  t.state = 'idle';
+  updateTimerItem(t);
+}
+
+function deleteTimer(id) {
+  const idx = timers.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  clearInterval(timers[idx].intervalId);
+  timers.splice(idx, 1);
+  renderTimers();
+}
+
+function onTimerDone(t) {
+  updateTimerItem(t);
+  // Web Notification
+  if (_timerNotifGranted) {
+    new Notification('タイマー完了', { body: `「${t.name}」が完了しました！`, icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="52" font-size="56">⏱</text></svg>' });
+  }
+  // Fallback: title flash
+  let blink = 0;
+  const origTitle = document.title;
+  const iv = setInterval(() => {
+    document.title = blink++ % 2 === 0 ? `⏱ ${t.name} 完了！` : origTitle;
+    if (blink > 10) { clearInterval(iv); document.title = origTitle; }
+  }, 600);
+}
+
+function fmtTimer(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function buildRingSVG(remaining, total, state) {
+  const r = 14, cx = 18, cy = 18;
+  const circumference = 2 * Math.PI * r;
+  const progress = total > 0 ? remaining / total : 1;
+  const dash = circumference * progress;
+  const color = state === 'done' ? '#ff7b7b' : state === 'running' ? '#e8ff3c' : '#444';
+  return `<svg class="timer-ring" viewBox="0 0 36 36">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="4"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="4"
+      stroke-dasharray="${dash.toFixed(2)} ${circumference.toFixed(2)}"
+      stroke-dashoffset="${(circumference * 0.25).toFixed(2)}"
+      stroke-linecap="round"
+      transform="rotate(-90 ${cx} ${cy})"/>
+  </svg>`;
+}
+
+function buildTimerItemHTML(t) {
+  const stateClass = t.state === 'running' ? 'running' : t.state === 'done' ? 'done' : 'idle';
+  const canStart  = t.state !== 'running';
+  const canPause  = t.state === 'running';
+  const startIcon = t.state === 'done' ? '↺' : '▶';
+  return `<div class="timer-item" id="ti-${t.id}">
+    ${buildRingSVG(t.remaining, t.total, t.state)}
+    <span class="timer-name" title="${t.name}">${t.name}</span>
+    <span class="timer-display ${stateClass}">${fmtTimer(t.remaining)}</span>
+    <div class="timer-btns">
+      ${canStart  ? `<button class="btn btn-ghost" style="padding:5px 10px;font-size:13px;" onclick="startTimer(${t.id})">${startIcon}</button>` : ''}
+      ${canPause  ? `<button class="btn btn-ghost" style="padding:5px 10px;font-size:13px;" onclick="pauseTimer(${t.id})">⏸</button>` : ''}
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:13px;" onclick="resetTimer(${t.id})">■</button>
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:13px;color:var(--text3);" onclick="deleteTimer(${t.id})">✕</button>
+    </div>
+  </div>`;
+}
+
+function renderTimers() {
+  const list  = document.getElementById('timerList');
+  const empty = document.getElementById('timerEmpty');
+  document.getElementById('timerCount').textContent = timers.length;
+  if (timers.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = timers.map(buildTimerItemHTML).join('');
+}
+
+function updateTimerItem(t) {
+  const el = document.getElementById(`ti-${t.id}`);
+  if (!el) return;
+  el.outerHTML = buildTimerItemHTML(t);
+}
+
+// Timer: Enter key in inputs
+document.getElementById('timerSec').addEventListener('keydown', e => { if (e.key === 'Enter') addTimer(); });
+document.getElementById('timerMin').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('timerSec').focus(); });
 
 // ══════════════════════════════════════════
 // OCR (Tesseract.js)
