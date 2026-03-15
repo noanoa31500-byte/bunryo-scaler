@@ -928,6 +928,13 @@ function parseLine(line) {
   line = line.trim();
   if (!line) return null;
 
+  // 全角→半角正規化（数字・英字・スラッシュ・スペース）
+  line = line.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 0x30));
+  line = line.replace(/[Ａ-Ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF21 + 0x41));
+  line = line.replace(/[ａ-ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF41 + 0x61));
+  line = line.replace(/／/g, '/');
+  line = line.replace(/　/g, ' ');
+
   // 区切りはコロン（：/:）またはスペース。数字が先・単位が先どちらも対応。
   // 例: 鶏もも肉：300g / 砂糖：大さじ2 / 牛乳：カップ1/2 / 鶏もも肉 300g
   const SEP = /\s*[：:]\s*|\s+/;
