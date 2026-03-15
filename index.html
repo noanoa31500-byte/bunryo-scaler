@@ -780,7 +780,7 @@
 
     <!-- Step 1: Drop zone (before image selected) -->
     <div id="ocrDropZone" class="ocr-drop-zone"
-         onclick="document.getElementById('ocrFileInput').click()"
+         onclick="triggerOcrFilePicker()"
          ondragover="event.preventDefault();this.classList.add('drag-over')"
          ondragleave="this.classList.remove('drag-over')"
          ondrop="onOcrDrop(event)">
@@ -799,7 +799,7 @@
           <option value="jpn+eng">日本語 + 英語</option>
           <option value="eng">英語</option>
         </select>
-        <button class="btn btn-ghost" style="font-size:11px;" onclick="document.getElementById('ocrFileInput').click()">別の画像</button>
+        <button class="btn btn-ghost" style="font-size:11px;" onclick="triggerOcrFilePicker()">別の画像</button>
       </div>
     </div>
 
@@ -2654,6 +2654,29 @@ document.addEventListener('paste', e => {
     }
   }
 });
+
+// ピクチャフォルダから開く（Chrome/Edge/Safari対応）、非対応は通常のinputにフォールバック
+async function triggerOcrFilePicker() {
+  if ('showOpenFilePicker' in window) {
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        startIn: 'pictures',
+        types: [{
+          description: '画像ファイル',
+          accept: { 'image/*': ['.jpg','.jpeg','.png','.gif','.webp','.heic','.heif','.bmp'] }
+        }],
+        multiple: false
+      });
+      const file = await handle.getFile();
+      loadOcrImage(file);
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return; // キャンセル
+      // 失敗したら通常のinputにフォールバック
+    }
+  }
+  document.getElementById('ocrFileInput').click();
+}
 
 function onOcrFileSelected(e) {
   const file = e.target.files[0];
