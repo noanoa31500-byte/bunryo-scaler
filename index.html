@@ -525,7 +525,7 @@
     <div class="card-body">
       <div class="notice">
         <span>↗</span>
-        <span>各行に「材料名：分量単位」の形式で入力。例：<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">砂糖：大さじ2</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">鶏もも肉：300g</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">塩：少々</code></span>
+        <span>各行に「材料名 分量単位」を入力（区切り文字不要）。例：<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">砂糖大さじ2</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">鶏もも肉300g</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">塩少々</code></span>
       </div>
       <div class="field" style="margin-bottom:16px;">
         <div class="field-label-row">
@@ -541,9 +541,9 @@
             </button>
           </div>
         </div>
-        <textarea id="ingredientInput" placeholder="砂糖：大さじ2&#10;醤油：大さじ3&#10;みりん：大さじ2&#10;鶏もも肉：300g&#10;玉ねぎ：1個&#10;卵：2個&#10;牛乳：カップ1/2&#10;塩：少々&#10;バター：10g"></textarea>
+        <textarea id="ingredientInput" placeholder="砂糖 大さじ2&#10;醤油 大さじ3&#10;みりん 大さじ2&#10;鶏もも肉 300g&#10;玉ねぎ 1個&#10;卵 2個&#10;牛乳 カップ1/2&#10;塩 少々&#10;バター 10g"></textarea>
         <div class="voice-status" id="voiceStatus"></div>
-        <div class="hint">形式：材料名：分量　例） 鶏もも肉：300g　砂糖：大さじ2　塩：少々<br>対応単位：g / kg / ml / L / 大さじ / 小さじ / カップ / 個 / 本 / 枚 / かけ / 片 / 少々 / ひとつまみ / 適量 / 少量 / 山盛り</div>
+        <div class="hint">形式：材料名 分量（区切り文字は不要）　例） 鶏もも肉300g　砂糖大さじ2　塩少々<br>対応単位：g / kg / ml / L / 大さじ / 小さじ / カップ / 個 / 本 / 枚 / かけ / 片 / 少々 / ひとつまみ / 適量 / 少量 / 山盛り</div>
       </div>
       <div class="number-row" id="normalModeControls">
         <div class="field">
@@ -928,46 +928,60 @@ function parseLine(line) {
   line = line.trim();
   if (!line) return null;
 
-  // 全角→半角正規化（数字・英字・スラッシュ・スペース）
+  // 全角→半角正規化
   line = line.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 0x30));
   line = line.replace(/[Ａ-Ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF21 + 0x41));
   line = line.replace(/[ａ-ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF41 + 0x61));
   line = line.replace(/／/g, '/');
   line = line.replace(/　/g, ' ');
 
-  // 区切りはコロン（：/:）またはスペース。数字が先・単位が先どちらも対応。
-  // 例: 鶏もも肉：300g / 砂糖：大さじ2 / 牛乳：カップ1/2 / 鶏もも肉 300g
-  const SEP = /\s*[：:]\s*|\s+/;
-  const sepIdx = line.search(/\s*[：:]\s*|\s+/);
-  if (sepIdx > 0) {
-    const namePart = line.slice(0, sepIdx).trim();
-    const amtPart  = line.slice(sepIdx).replace(/^[\s：:]+/, '').trim();
-
-    // 「大さじ2」「小さじ1/2」「カップ1/2」— 単位が先
-    const reUnitFirst = /^(大さじ|小さじ|カップ)\s*([\d./]+)(.*)$/u;
-    const mUF = amtPart.match(reUnitFirst);
-    if (mUF) {
-      return { name: namePart, numStr: mUF[2], unit: mUF[1], suffix: mUF[3].trim(), isAmbiguous: false, ambiguousNote: null };
-    }
-
-    // 「300g」「2個」— 数字が先
-    const reNumFirst = /^([\d./]+)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*)$/u;
-    const mNF = amtPart.match(reNumFirst);
-    if (mNF) {
-      return { name: namePart, numStr: mNF[1], unit: (mNF[2]||'').trim(), suffix: mNF[3].trim(), isAmbiguous: false, ambiguousNote: null };
-    }
-  }
-
+  // 曖昧分量（少々・適量など）は先に処理
   const ambigMap = { '少々':'約0.5g','ひとつまみ':'約1g','適量':'（目安：少々〜小さじ1）','少量':'約1〜2g' };
   for (const [w, note] of Object.entries(ambigMap)) {
     const idx = line.lastIndexOf(w);
-    if (idx > 0) return { name: line.slice(0,idx).replace(/\s*[：:]\s*$/, '').trim()||line, numStr:null, unit:w, suffix:'', isAmbiguous:true, ambiguousNote:note };
+    if (idx > 0) {
+      return { name: line.slice(0, idx).replace(/[\s：:]+$/, '').trim() || line, numStr:null, unit:w, suffix:'', isAmbiguous:true, ambiguousNote:note };
+    }
   }
 
-  const mYama = line.match(/^(.+?)\s*[：:]?\s*(山盛り\s*(\d[\d./]*)?\s*(大さじ|小さじ|g)?)$/u);
-  if (mYama) return { name:mYama[1].trim(), numStr:mYama[3]||null, unit:mYama[4]||'山盛り', suffix:'', isAmbiguous:false, ambiguousNote:'通常の約1.5倍', isMountain:true };
+  // 山盛り
+  const mYama = line.match(/(.*?)\s*山盛り\s*([\d./]*)?\s*(大さじ|小さじ|g)?$/u);
+  if (mYama && mYama[1]) {
+    const name = mYama[1].replace(/[\s：:]+$/, '').trim();
+    if (name) return { name, numStr: mYama[2]||null, unit: mYama[3]||'山盛り', suffix:'', isAmbiguous:false, ambiguousNote:'通常の約1.5倍', isMountain:true };
+  }
 
-  return { name:line, numStr:null, unit:'', suffix:'', isAmbiguous:false, ambiguousNote:null };
+  // ── 末尾から数量を抽出（セパレータ完全不要）────────────────
+  // 単位先パターン: 大さじ2, 小さじ1/2, カップ1/2
+  const reUF = /(大さじ|小さじ|カップ)\s*([\d./]+)\s*$/u;
+  // 数字先パターン: 300g, 2個, 10ml, 1/2カップ
+  const reNF = /([\d./]+)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)\s*$/u;
+
+  const mUF = line.match(reUF);
+  const mNF = line.match(reNF);
+
+  // どちらにもマッチする場合、より後ろから始まるほうを採用
+  let chosen = null;
+  if (mUF && mNF) {
+    chosen = mUF.index >= mNF.index ? { type:'uf', m:mUF } : { type:'nf', m:mNF };
+  } else if (mUF) {
+    chosen = { type:'uf', m:mUF };
+  } else if (mNF) {
+    chosen = { type:'nf', m:mNF };
+  }
+
+  if (chosen) {
+    const name = line.slice(0, chosen.m.index).replace(/[\s：:]+$/, '').trim();
+    if (!name) return null;
+    if (chosen.type === 'uf') {
+      return { name, numStr: chosen.m[2], unit: chosen.m[1], suffix:'', isAmbiguous:false, ambiguousNote:null };
+    } else {
+      return { name, numStr: chosen.m[1], unit: chosen.m[2], suffix:'', isAmbiguous:false, ambiguousNote:null };
+    }
+  }
+
+  // 数量なし（材料名のみ）
+  return { name: line.replace(/[\s：:]+$/, '').trim(), numStr:null, unit:'', suffix:'', isAmbiguous:false, ambiguousNote:null };
 }
 
 // ══════════════════════════════════════════
