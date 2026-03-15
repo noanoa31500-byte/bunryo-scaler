@@ -786,7 +786,7 @@
          ondrop="onOcrDrop(event)">
       <div class="ocr-drop-icon">📷</div>
       <div>写真をドロップ、またはクリックして選択</div>
-      <div style="font-size:11px;margin-top:4px;color:var(--text3)">カメラ撮影・ファイル選択どちらも可</div>
+      <div style="font-size:11px;margin-top:6px;color:var(--text3)">スクリーンショットは <kbd style="background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px;">⌘V</kbd> / <kbd style="background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px;">Ctrl+V</kbd> で貼り付けも可</div>
     </div>
 
     <!-- Step 2: Preview (after image selected) -->
@@ -2640,6 +2640,20 @@ function closeOcrModal() {
 function onOcrOverlayClick(e) {
   if (e.target === document.getElementById('ocrModal')) closeOcrModal();
 }
+
+// Cmd+V / Ctrl+V でクリップボードから画像を貼り付け
+document.addEventListener('paste', e => {
+  if (document.getElementById('ocrModal').classList.contains('hidden')) return;
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) loadOcrImage(file);
+      break;
+    }
+  }
+});
 
 function onOcrFileSelected(e) {
   const file = e.target.files[0];
