@@ -138,6 +138,44 @@
   .ing-calorie { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); text-align: right; }
   .table-wrap { overflow-x: auto; }
 
+  /* ── OCR MODAL ──────────────────────────── */
+  .ocr-modal { max-width: 520px; width: 100%; }
+  .ocr-preview-wrap {
+    width: 100%; max-height: 260px; overflow: hidden;
+    border-radius: var(--radius-sm); background: var(--bg3);
+    display: flex; align-items: center; justify-content: center;
+    margin: 12px 0; border: 1px solid var(--border);
+  }
+  .ocr-preview-wrap img { max-width: 100%; max-height: 260px; object-fit: contain; display: block; }
+  .ocr-progress { margin: 12px 0; }
+  .ocr-progress-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .ocr-progress-track { width: 100%; height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+  .ocr-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
+  .ocr-results-label { font-size: 11px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  .ocr-checklist { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+  .ocr-check-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; border-radius: var(--radius-sm);
+    background: var(--bg3); cursor: pointer; user-select: none;
+    border: 1px solid transparent; transition: border-color 0.1s;
+  }
+  .ocr-check-item:hover { border-color: var(--border2); }
+  .ocr-check-item.checked { border-color: var(--accent); background: var(--accent-dim2); }
+  .ocr-check-item input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
+  .ocr-check-text { font-size: 13px; flex: 1; }
+  .ocr-check-badge { font-size: 10px; font-family: 'DM Mono', monospace; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+  .ocr-badge-ing { background: rgba(107,255,184,0.12); color: #6bffb8; border: 1px solid rgba(107,255,184,0.25); }
+  .ocr-badge-other { background: var(--bg4); color: var(--text3); border: 1px solid var(--border); }
+  .ocr-drop-zone {
+    border: 2px dashed var(--border2); border-radius: var(--radius);
+    padding: 32px 20px; text-align: center; cursor: pointer;
+    transition: all 0.15s; margin: 12px 0; color: var(--text3); font-size: 13px;
+  }
+  .ocr-drop-zone:hover, .ocr-drop-zone.drag-over { border-color: var(--accent); color: var(--accent); background: var(--accent-dim2); }
+  .ocr-drop-icon { font-size: 32px; margin-bottom: 8px; }
+  .ocr-lang-row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+  .ocr-lang-row label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+
   /* ── MODE TOGGLE ────────────────────────── */
   .mode-toggle { display: flex; gap: 0; border: 1px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
   .mode-btn { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 12px; background: transparent; color: var(--text3); border: none; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
@@ -530,14 +568,24 @@
       <div class="field" style="margin-bottom:16px;">
         <div class="field-label-row">
           <label>材料リスト</label>
-          <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="音声入力（クリックして開始）">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="1" width="6" height="8" rx="3"/>
-              <path d="M2 7a5 5 0 0 0 10 0"/>
-              <line x1="7" y1="12" x2="7" y2="14"/>
-              <line x1="4.5" y1="14" x2="9.5" y2="14"/>
-            </svg>
-          </button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="音声入力（クリックして開始）">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="1" width="6" height="8" rx="3"/>
+                <path d="M2 7a5 5 0 0 0 10 0"/>
+                <line x1="7" y1="12" x2="7" y2="14"/>
+                <line x1="4.5" y1="14" x2="9.5" y2="14"/>
+              </svg>
+            </button>
+            <button class="mic-btn" id="ocrBtn" onclick="openOcrModal()" title="レシピ写真から食材を抽出">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="12" height="9" rx="1.5"/>
+                <circle cx="7" cy="7.5" r="2.2"/>
+                <path d="M4.5 3 L5.5 1.5 H8.5 L9.5 3"/>
+              </svg>
+            </button>
+            <input type="file" id="ocrFileInput" accept="image/*" style="display:none;" onchange="onOcrFileSelected(event)">
+          </div>
         </div>
         <textarea id="ingredientInput" placeholder="砂糖 大さじ2&#10;醤油 大さじ3&#10;みりん 大さじ2&#10;鶏もも肉 300g&#10;玉ねぎ 1個&#10;卵 2個&#10;牛乳 カップ1/2&#10;塩 少々&#10;バター 10g"></textarea>
         <div class="voice-status" id="voiceStatus"></div>
@@ -724,6 +772,65 @@
   </div>
 
 </main>
+
+<!-- OCR MODAL -->
+<div class="modal-overlay hidden" id="ocrModal" onclick="onOcrOverlayClick(event)">
+  <div class="modal ocr-modal">
+    <div class="modal-title">レシピ写真から食材を抽出</div>
+
+    <!-- Step 1: Drop zone (before image selected) -->
+    <div id="ocrDropZone" class="ocr-drop-zone"
+         onclick="document.getElementById('ocrFileInput').click()"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="onOcrDrop(event)">
+      <div class="ocr-drop-icon">📷</div>
+      <div>写真をドロップ、またはクリックして選択</div>
+      <div style="font-size:11px;margin-top:4px;color:var(--text3)">カメラ撮影・ファイル選択どちらも可</div>
+    </div>
+
+    <!-- Step 2: Preview (after image selected) -->
+    <div id="ocrPreviewSection" style="display:none;">
+      <div class="ocr-preview-wrap"><img id="ocrPreviewImg" src="" alt="preview"></div>
+      <div class="ocr-lang-row">
+        <label>言語</label>
+        <select id="ocrLang" class="input" style="width:auto;padding:4px 10px;font-size:12px;">
+          <option value="jpn">日本語</option>
+          <option value="jpn+eng">日本語 + 英語</option>
+          <option value="eng">英語</option>
+        </select>
+        <button class="btn btn-ghost" style="font-size:11px;" onclick="document.getElementById('ocrFileInput').click()">別の画像</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Progress -->
+    <div id="ocrProgressSection" style="display:none;">
+      <div class="ocr-progress">
+        <div class="ocr-progress-label">
+          <span id="ocrProgressText">準備中…</span>
+          <span id="ocrProgressPct">0%</span>
+        </div>
+        <div class="ocr-progress-track"><div class="ocr-progress-fill" id="ocrProgressFill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- Step 4: Results -->
+    <div id="ocrResultSection" style="display:none;">
+      <div class="ocr-results-label">抽出された行（チェックして追加）</div>
+      <div class="ocr-checklist" id="ocrChecklist"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+        <button class="btn btn-ghost" style="font-size:11px;" onclick="ocrToggleAll(true)">全選択</button>
+        <button class="btn btn-ghost" style="font-size:11px;" onclick="ocrToggleAll(false)">全解除</button>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeOcrModal()">閉じる</button>
+      <button class="btn btn-primary" id="ocrRunBtn" onclick="runOcr()" style="display:none;">抽出開始</button>
+      <button class="btn btn-primary" id="ocrApplyBtn" onclick="applyOcrResults()" style="display:none;">テキストエリアに追加</button>
+    </div>
+  </div>
+</div>
 
 <!-- QR MODAL -->
 <div class="modal-overlay hidden" id="qrModal" onclick="onQrOverlayClick(event)">
@@ -2500,6 +2607,181 @@ function updateTimerItem(t) {
 // Timer: Enter key in inputs
 document.getElementById('timerSec').addEventListener('keydown', e => { if (e.key === 'Enter') addTimer(); });
 document.getElementById('timerMin').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('timerSec').focus(); });
+
+// ══════════════════════════════════════════
+// OCR (Tesseract.js)
+// ══════════════════════════════════════════
+
+let _ocrImageSrc = null;
+let _ocrTesseractLoaded = false;
+
+// Keywords that strongly suggest an ingredient line
+const UNIT_RE = /[\d０-９]|大さじ|小さじ|カップ|少々|適量|ひとつまみ|少量|g|ｇ|kg|ml|ｍｌ|L|ℓ|個|本|枚|かけ|片|cc/u;
+const NOISE_RE = /^(手順|作り方|下準備|ポイント|コツ|①|②|③|④|⑤|[１２３４５６７８９][．.])/u;
+
+function openOcrModal() {
+  _ocrImageSrc = null;
+  document.getElementById('ocrModal').classList.remove('hidden');
+  document.getElementById('ocrDropZone').style.display = 'block';
+  document.getElementById('ocrPreviewSection').style.display = 'none';
+  document.getElementById('ocrProgressSection').style.display = 'none';
+  document.getElementById('ocrResultSection').style.display = 'none';
+  document.getElementById('ocrRunBtn').style.display = 'none';
+  document.getElementById('ocrApplyBtn').style.display = 'none';
+}
+
+function closeOcrModal() {
+  document.getElementById('ocrModal').classList.add('hidden');
+}
+
+function onOcrOverlayClick(e) {
+  if (e.target === document.getElementById('ocrModal')) closeOcrModal();
+}
+
+function onOcrFileSelected(e) {
+  const file = e.target.files[0];
+  if (file) loadOcrImage(file);
+  e.target.value = '';
+}
+
+function onOcrDrop(e) {
+  e.preventDefault();
+  document.getElementById('ocrDropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadOcrImage(file);
+}
+
+function loadOcrImage(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    _ocrImageSrc = ev.target.result;
+    document.getElementById('ocrPreviewImg').src = _ocrImageSrc;
+    document.getElementById('ocrDropZone').style.display = 'none';
+    document.getElementById('ocrPreviewSection').style.display = 'block';
+    document.getElementById('ocrResultSection').style.display = 'none';
+    document.getElementById('ocrProgressSection').style.display = 'none';
+    document.getElementById('ocrRunBtn').style.display = 'inline-flex';
+    document.getElementById('ocrApplyBtn').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function loadTesseract() {
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload  = resolve;
+    s.onerror = () => reject(new Error('Tesseract.js の読み込みに失敗しました'));
+    document.head.appendChild(s);
+  });
+}
+
+async function runOcr() {
+  if (!_ocrImageSrc) return;
+  const lang = document.getElementById('ocrLang').value;
+
+  document.getElementById('ocrRunBtn').style.display = 'none';
+  document.getElementById('ocrProgressSection').style.display = 'block';
+  document.getElementById('ocrResultSection').style.display = 'none';
+  setOcrProgress('Tesseract.js を読み込み中…', 0);
+
+  try {
+    await loadTesseract();
+    setOcrProgress('画像を解析中…', 10);
+
+    const worker = await Tesseract.createWorker(lang, 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          setOcrProgress('テキストを認識中…', 10 + Math.round(m.progress * 85));
+        }
+      }
+    });
+
+    setOcrProgress('テキストを認識中…', 10);
+    const { data: { text } } = await worker.recognize(_ocrImageSrc);
+    await worker.terminate();
+
+    setOcrProgress('完了', 100);
+    setTimeout(() => {
+      document.getElementById('ocrProgressSection').style.display = 'none';
+      renderOcrResults(text);
+    }, 400);
+
+  } catch (err) {
+    document.getElementById('ocrProgressSection').style.display = 'none';
+    document.getElementById('ocrRunBtn').style.display = 'inline-flex';
+    alert('エラー: ' + err.message);
+  }
+}
+
+function setOcrProgress(text, pct) {
+  document.getElementById('ocrProgressText').textContent = text;
+  document.getElementById('ocrProgressPct').textContent  = pct + '%';
+  document.getElementById('ocrProgressFill').style.width = pct + '%';
+}
+
+function looksLikeIngredient(line) {
+  if (line.length < 2 || line.length > 40) return false;
+  if (NOISE_RE.test(line)) return false;
+  return UNIT_RE.test(line);
+}
+
+function renderOcrResults(rawText) {
+  const lines = rawText
+    .split('\n')
+    .map(l => l.replace(/\s+/g, ' ').trim())
+    .filter(l => l.length >= 2 && l.length <= 50);
+
+  // Deduplicate
+  const seen = new Set();
+  const unique = lines.filter(l => { if (seen.has(l)) return false; seen.add(l); return true; });
+
+  const list = document.getElementById('ocrChecklist');
+  list.innerHTML = '';
+
+  if (unique.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px;">テキストが検出されませんでした。別の写真を試してください。</div>';
+    document.getElementById('ocrResultSection').style.display = 'block';
+    return;
+  }
+
+  unique.forEach((line, i) => {
+    const isIng = looksLikeIngredient(line);
+    const item = document.createElement('label');
+    item.className = 'ocr-check-item' + (isIng ? ' checked' : '');
+    item.innerHTML = `
+      <input type="checkbox" id="ocr-cb-${i}" ${isIng ? 'checked' : ''} onchange="this.closest('.ocr-check-item').classList.toggle('checked',this.checked)">
+      <span class="ocr-check-text">${escHtml(line)}</span>
+      <span class="ocr-check-badge ${isIng ? 'ocr-badge-ing' : 'ocr-badge-other'}">${isIng ? '食材' : 'その他'}</span>`;
+    list.appendChild(item);
+  });
+
+  document.getElementById('ocrResultSection').style.display = 'block';
+  document.getElementById('ocrApplyBtn').style.display = 'inline-flex';
+}
+
+function ocrToggleAll(checked) {
+  document.querySelectorAll('#ocrChecklist input[type="checkbox"]').forEach(cb => {
+    cb.checked = checked;
+    cb.closest('.ocr-check-item').classList.toggle('checked', checked);
+  });
+}
+
+function applyOcrResults() {
+  const selected = [];
+  document.querySelectorAll('#ocrChecklist input[type="checkbox"]:checked').forEach(cb => {
+    const text = cb.closest('.ocr-check-item').querySelector('.ocr-check-text').textContent;
+    selected.push(text.trim());
+  });
+  if (selected.length === 0) { alert('行を選択してください。'); return; }
+
+  const ta = document.getElementById('ingredientInput');
+  const existing = ta.value.trim();
+  ta.value = existing ? existing + '\n' + selected.join('\n') : selected.join('\n');
+  closeOcrModal();
+  ta.focus();
+}
 
 // ── Service Worker ─────────────────────────
 if ('serviceWorker' in navigator) {
