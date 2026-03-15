@@ -811,35 +811,97 @@ let foodDBEntries = null;
   } catch(e) { /* ネットワーク不可時は無視してbuilt-inのみ使用 */ }
 })();
 
+// fooddbは動物名がひらがな（にわとり・ぶた・うし）なので正規化マップ
+const FOODDB_NORMALIZE = [
+  [/ほうれん草/, 'ほうれんそう'],
+  [/玉ねぎ|玉葱/, 'たまねぎ'],
+  [/長ねぎ|長葱/, 'ねぎ'],
+];
+
+// 肉類: ユーザーの入力を [species, cut] トークンに分解して複合検索
+const MEAT_SPECIES = [
+  [/鶏|とり肉|チキン|手羽/, 'にわとり'],
+  [/豚(?!足)/, 'ぶた'],
+  [/牛(?!乳|蒡)/, 'うし'],
+];
+const MEAT_CUTS = [
+  [/もも肉|もも/, 'もも'],
+  [/むね肉|むね/, 'むね'],
+  [/ささみ/, 'ささみ'],
+  [/バラ肉|ばら肉|バラ/, 'ばら'],
+  [/ロース/, 'ロース'],
+  [/かた肉|かた/, 'かた'],
+  [/ひき肉|挽き肉/, 'ひき肉'],
+  [/手羽先/, '手羽さき'],
+  [/手羽元/, '手羽もと'],
+  [/手羽/, '手羽'],
+  [/レバー/, 'レバー'],
+  [/ハツ|心臓/, 'ハツ'],
+];
+
+function normalizeForFoodDB(name) {
+  // 肉類を複数キーワードに分解して返す
+  for (const [spPat, spRep] of MEAT_SPECIES) {
+    if (spPat.test(name)) {
+      for (const [cutPat, cutRep] of MEAT_CUTS) {
+        if (cutPat.test(name)) {
+          return { type: 'meat', species: spRep, cut: cutRep };
+        }
+      }
+      // 部位不明: 動物名だけ
+      return { type: 'meat', species: spRep, cut: null };
+    }
+  }
+  // 通常の正規化
+  let n = name;
+  for (const [pat, rep] of FOODDB_NORMALIZE) n = n.replace(pat, rep);
+  return { type: 'text', q: n };
+}
+
+function pickRaw(list) {
+  // 「生」のエントリ（皮つきを優先）、なければ最短
+  const raws = list.filter(e => e.name.endsWith(' 生'));
+  if (raws.length > 0) {
+    const skinOn = raws.find(e => e.name.includes('皮つき'));
+    return skinOn || raws[0];
+  }
+  return list.sort((a,b) => a.name.length - b.name.length)[0];
+}
+
 function findInFoodDB(name) {
   if (!foodDBEntries) return null;
-  // 1. 完全一致
-  const exact = foodDBEntries.find(e => e.name === name);
-  if (exact) return exact;
-  // 2. fooddb名がユーザー名で始まる（「にんじん 根...」はにんじんで始まる → 生を優先）
-  const startsWith = foodDBEntries.filter(e => e.name.startsWith(name));
-  if (startsWith.length > 0) {
-    // 「生」のエントリを最優先、次に短いもの
-    const raw = startsWith.find(e => e.name.endsWith(' 生'));
-    return raw || startsWith.sort((a,b) => a.name.length - b.name.length)[0];
+  const norm = normalizeForFoodDB(name);
+
+  // ── 肉類: 動物種 + 部位の複合検索 ──────────────────────
+  if (norm.type === 'meat') {
+    let pool = foodDBEntries.filter(e => e.name.includes(norm.species));
+    if (norm.cut) pool = pool.filter(e => e.name.includes(norm.cut));
+    if (pool.length > 0) return pickRaw(pool);
+    // 部位が見つからなければ動物種のみで探す
+    const fallback = foodDBEntries.filter(e => e.name.includes(norm.species));
+    if (fallback.length > 0) return pickRaw(fallback);
+    return null;
   }
-  // 3. fooddb名の括弧除去した先頭トークンにユーザー名が含まれる（「（まぐろ類）」→まぐろ）
+
+  // ── 通常テキスト検索 ──────────────────────────────────
+  const q = norm.q;
+  // 1. 完全一致
+  const exact = foodDBEntries.find(e => e.name === q);
+  if (exact) return exact;
+  // 2. fooddb名がqで始まる（「にんじん 根...」→ 生を優先）
+  const startsWith = foodDBEntries.filter(e => e.name.startsWith(q));
+  if (startsWith.length > 0) return pickRaw(startsWith);
+  // 3. 括弧除去した先頭トークンにqが含まれる（「（まぐろ類）」→まぐろ）
   const tok1 = foodDBEntries.filter(e => {
     const tok = e.name.split(' ')[0].replace(/[（(）)［\]＜＞]/g, '');
-    return tok.length >= 2 && tok.includes(name);
+    return tok.length >= 2 && tok.includes(q);
   });
-  if (tok1.length > 0) {
-    const raw = tok1.find(e => e.name.endsWith(' 生'));
-    return raw || tok1.sort((a,b) => a.name.length - b.name.length)[0];
-  }
-  // 4. fooddb名全体にユーザー名が含まれる（最後の手段）— 先頭付近マッチを優先
-  const contains = foodDBEntries.filter(e => e.name.includes(name));
+  if (tok1.length > 0) return pickRaw(tok1);
+  // 4. fooddb名全体にqが含まれる（先頭付近優先）
+  const contains = foodDBEntries.filter(e => e.name.includes(q));
   if (contains.length > 0) {
-    // 先頭から始まるものを優先、次に「生」のもの、次に短いもの
-    const early = contains.filter(e => e.name.indexOf(name) <= 4);
-    const pool = early.length > 0 ? early : contains;
-    const raw = pool.find(e => e.name.endsWith(' 生'));
-    return raw || pool.sort((a,b) => a.name.length - b.name.length)[0];
+    const early = contains.filter(e => e.name.indexOf(q) <= 4);
+    return pickRaw(early.length > 0 ? early : contains);
   }
   return null;
 }
