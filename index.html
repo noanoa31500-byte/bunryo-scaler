@@ -525,7 +525,7 @@
     <div class="card-body">
       <div class="notice">
         <span>↗</span>
-        <span>各行に「材料名 分量単位」の形式で入力。例：<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">砂糖 大さじ2</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">鶏もも肉 300g</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">塩 少々</code></span>
+        <span>各行に「材料名：分量単位」の形式で入力。例：<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">砂糖：大さじ2</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">鶏もも肉：300g</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">塩：少々</code></span>
       </div>
       <div class="field" style="margin-bottom:16px;">
         <div class="field-label-row">
@@ -541,9 +541,9 @@
             </button>
           </div>
         </div>
-        <textarea id="ingredientInput" placeholder="砂糖 大さじ2&#10;醤油 大さじ3&#10;みりん 大さじ2&#10;鶏もも肉 300g&#10;玉ねぎ 1個&#10;卵 2個&#10;牛乳 カップ1/2&#10;塩 少々&#10;バター 10g"></textarea>
+        <textarea id="ingredientInput" placeholder="砂糖：大さじ2&#10;醤油：大さじ3&#10;みりん：大さじ2&#10;鶏もも肉：300g&#10;玉ねぎ：1個&#10;卵：2個&#10;牛乳：カップ1/2&#10;塩：少々&#10;バター：10g"></textarea>
         <div class="voice-status" id="voiceStatus"></div>
-        <div class="hint">対応単位：g / kg / ml / L / 大さじ / 小さじ / カップ / 個 / 本 / 枚 / かけ / 片 / 少々 / ひとつまみ / 適量 / 少量 / 山盛り</div>
+        <div class="hint">形式：材料名：分量　例） 鶏もも肉：300g　砂糖：大さじ2　塩：少々<br>対応単位：g / kg / ml / L / 大さじ / 小さじ / カップ / 個 / 本 / 枚 / かけ / 片 / 少々 / ひとつまみ / 適量 / 少量 / 山盛り</div>
       </div>
       <div class="number-row" id="normalModeControls">
         <div class="field">
@@ -928,19 +928,24 @@ function parseLine(line) {
   line = line.trim();
   if (!line) return null;
 
-  const reAmount = /^(.+?)\s+((\d+[\d./]*)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*))$/u;
+  // コロン（：/: ）またはスペースを区切りとして受け付ける
+  const reAmount = /^(.+?)\s*[：:]\s*((\d+[\d./]*)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*))$|^(.+?)\s+((\d+[\d./]*)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*))$/u;
   const mA = line.match(reAmount);
   if (mA) {
-    return { name: mA[1].trim(), numStr: mA[3], unit: (mA[4]||'').trim(), suffix: (mA[5]||'').trim(), isAmbiguous: false, ambiguousNote: null };
+    const name   = (mA[1] || mA[6]).trim();
+    const numStr = mA[3] || mA[8];
+    const unit   = ((mA[4] || mA[9]) || '').trim();
+    const suffix = ((mA[5] || mA[10]) || '').trim();
+    return { name, numStr, unit, suffix, isAmbiguous: false, ambiguousNote: null };
   }
 
   const ambigMap = { '少々':'約0.5g','ひとつまみ':'約1g','適量':'（目安：少々〜小さじ1）','少量':'約1〜2g' };
   for (const [w, note] of Object.entries(ambigMap)) {
     const idx = line.lastIndexOf(w);
-    if (idx > 0) return { name: line.slice(0,idx).trim()||line, numStr:null, unit:w, suffix:'', isAmbiguous:true, ambiguousNote:note };
+    if (idx > 0) return { name: line.slice(0,idx).replace(/\s*[：:]\s*$/, '').trim()||line, numStr:null, unit:w, suffix:'', isAmbiguous:true, ambiguousNote:note };
   }
 
-  const mYama = line.match(/^(.+?)\s+(山盛り\s*(\d[\d./]*)?\s*(大さじ|小さじ|g)?)$/u);
+  const mYama = line.match(/^(.+?)\s*[：:]?\s*(山盛り\s*(\d[\d./]*)?\s*(大さじ|小さじ|g)?)$/u);
   if (mYama) return { name:mYama[1].trim(), numStr:mYama[3]||null, unit:mYama[4]||'山盛り', suffix:'', isAmbiguous:false, ambiguousNote:'通常の約1.5倍', isMountain:true };
 
   return { name:line, numStr:null, unit:'', suffix:'', isAmbiguous:false, ambiguousNote:null };
@@ -2101,7 +2106,7 @@ function setMode(mode) {
   // Update placeholder
   const ta = document.getElementById('ingredientInput');
   if (mode === 'baker') {
-    ta.placeholder = '強力粉 300g\n砂糖 18g\n塩 6g\nドライイースト 3g\nバター 30g\n水 210ml';
+    ta.placeholder = '強力粉：300g\n砂糖：18g\n塩：6g\nドライイースト：3g\nバター：30g\n水：210ml';
   } else {
     ta.placeholder = '砂糖 大さじ2\n醤油 大さじ3\nみりん 大さじ2\n鶏もも肉 300g\n玉ねぎ 1個\n卵 2個\n牛乳 カップ1/2\n塩 少々\nバター 10g';
   }
