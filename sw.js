@@ -1,11 +1,15 @@
 // 分量スケーラ — Service Worker
-const CACHE = 'scaler-v3';
+const CACHE = 'scaler-v4';
 const ASSETS = [
   './',
   './index.html',
+  './style.css',
+  './js/fooddb.js',
+  './js/data.js',
+  './js/core.js',
+  './js/app.js',
   './planner.html',
   './pantry.html',
-  './fooddb_compact.json',
 ];
 
 // Install: cache all static assets
