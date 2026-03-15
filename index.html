@@ -2612,8 +2612,11 @@ document.getElementById('timerMin').addEventListener('keydown', e => { if (e.key
 // OCR (Tesseract.js)
 // ══════════════════════════════════════════
 
-let _ocrImageSrc = null;
-let _ocrTesseractLoaded = false;
+let _ocrImageSrc  = null;
+let _ocrWorker    = null;   // 使い回すworker
+let _ocrWorkerLang = null;  // workerが対応している言語
+let _ocrWarmingUp = false;  // バックグラウンド準備中フラグ
+let _ocrReady     = false;  // 準備完了フラグ
 
 // Keywords that strongly suggest an ingredient line
 const UNIT_RE = /[\d０-９]|大さじ|小さじ|カップ|少々|適量|ひとつまみ|少量|g|ｇ|kg|ml|ｍｌ|L|ℓ|個|本|枚|かけ|片|cc/u;
@@ -2660,13 +2663,20 @@ function loadOcrImage(file) {
     document.getElementById('ocrPreviewSection').style.display = 'block';
     document.getElementById('ocrResultSection').style.display = 'none';
     document.getElementById('ocrProgressSection').style.display = 'none';
-    document.getElementById('ocrRunBtn').style.display = 'inline-flex';
+    const runBtn = document.getElementById('ocrRunBtn');
+    runBtn.style.display = 'inline-flex';
+    if (!_ocrReady) {
+      runBtn.textContent = '準備中…';
+      runBtn.dataset.waiting = '1';
+    } else {
+      runBtn.textContent = '抽出開始';
+    }
     document.getElementById('ocrApplyBtn').style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
 
-function loadTesseract() {
+function loadTesseractScript() {
   return new Promise((resolve, reject) => {
     if (window.Tesseract) { resolve(); return; }
     const s = document.createElement('script');
@@ -2677,6 +2687,39 @@ function loadTesseract() {
   });
 }
 
+// バックグラウンドでworkerを事前準備（ページ読み込み後3秒後に自動実行）
+async function warmUpOcrWorker(lang) {
+  lang = lang || 'jpn';
+  if (_ocrWarmingUp || (_ocrReady && _ocrWorkerLang === lang)) return;
+  _ocrWarmingUp = true;
+  try {
+    await loadTesseractScript();
+    if (_ocrWorker && _ocrWorkerLang !== lang) {
+      await _ocrWorker.terminate();
+      _ocrWorker = null;
+    }
+    if (!_ocrWorker) {
+      _ocrWorker = await Tesseract.createWorker(lang, 1, { logger: () => {} });
+      _ocrWorkerLang = lang;
+    }
+    _ocrReady = true;
+    // ボタンを「準備完了」に更新
+    const btn = document.getElementById('ocrRunBtn');
+    if (btn && btn.dataset.waiting) {
+      btn.textContent = '抽出開始';
+      delete btn.dataset.waiting;
+    }
+  } catch(_) {}
+  _ocrWarmingUp = false;
+}
+setTimeout(() => warmUpOcrWorker('jpn'), 3000);
+
+// 言語変更時にworkerを切り替え
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('ocrLang');
+  if (sel) sel.addEventListener('change', () => warmUpOcrWorker(sel.value));
+});
+
 async function runOcr() {
   if (!_ocrImageSrc) return;
   const lang = document.getElementById('ocrLang').value;
@@ -2684,33 +2727,32 @@ async function runOcr() {
   document.getElementById('ocrRunBtn').style.display = 'none';
   document.getElementById('ocrProgressSection').style.display = 'block';
   document.getElementById('ocrResultSection').style.display = 'none';
-  setOcrProgress('Tesseract.js を読み込み中…', 0);
 
   try {
-    await loadTesseract();
-    setOcrProgress('画像を解析中…', 10);
+    // workerがまだ準備できていない場合はここで作る
+    if (!_ocrReady || _ocrWorkerLang !== lang) {
+      setOcrProgress('エンジンを準備中…', 5);
+      await warmUpOcrWorker(lang);
+    }
 
-    const worker = await Tesseract.createWorker(lang, 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          setOcrProgress('テキストを認識中…', 10 + Math.round(m.progress * 85));
-        }
-      }
+    setOcrProgress('テキストを認識中…', 15);
+
+    const { data: { text } } = await _ocrWorker.recognize(_ocrImageSrc, {}, {
+      text: true,
     });
-
-    setOcrProgress('テキストを認識中…', 10);
-    const { data: { text } } = await worker.recognize(_ocrImageSrc);
-    await worker.terminate();
+    // workerは terminate せず使い回す
 
     setOcrProgress('完了', 100);
     setTimeout(() => {
       document.getElementById('ocrProgressSection').style.display = 'none';
       renderOcrResults(text);
-    }, 400);
+    }, 300);
 
   } catch (err) {
     document.getElementById('ocrProgressSection').style.display = 'none';
     document.getElementById('ocrRunBtn').style.display = 'inline-flex';
+    // workerが壊れた可能性があるのでリセット
+    _ocrWorker = null; _ocrReady = false;
     alert('エラー: ' + err.message);
   }
 }
