@@ -1,5 +1,5 @@
 // 分量スケーラ — Service Worker
-const CACHE = 'scaler-v1';
+const CACHE = 'scaler-v2';
 const ASSETS = [
   './',
   './index.html',
