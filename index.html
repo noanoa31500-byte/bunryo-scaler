@@ -928,15 +928,27 @@ function parseLine(line) {
   line = line.trim();
   if (!line) return null;
 
-  // コロン（：/: ）またはスペースを区切りとして受け付ける
-  const reAmount = /^(.+?)\s*[：:]\s*((\d+[\d./]*)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*))$|^(.+?)\s+((\d+[\d./]*)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*))$/u;
-  const mA = line.match(reAmount);
-  if (mA) {
-    const name   = (mA[1] || mA[6]).trim();
-    const numStr = mA[3] || mA[8];
-    const unit   = ((mA[4] || mA[9]) || '').trim();
-    const suffix = ((mA[5] || mA[10]) || '').trim();
-    return { name, numStr, unit, suffix, isAmbiguous: false, ambiguousNote: null };
+  // 区切りはコロン（：/:）またはスペース。数字が先・単位が先どちらも対応。
+  // 例: 鶏もも肉：300g / 砂糖：大さじ2 / 牛乳：カップ1/2 / 鶏もも肉 300g
+  const SEP = /\s*[：:]\s*|\s+/;
+  const sepIdx = line.search(/\s*[：:]\s*|\s+/);
+  if (sepIdx > 0) {
+    const namePart = line.slice(0, sepIdx).trim();
+    const amtPart  = line.slice(sepIdx).replace(/^[\s：:]+/, '').trim();
+
+    // 「大さじ2」「小さじ1/2」「カップ1/2」— 単位が先
+    const reUnitFirst = /^(大さじ|小さじ|カップ)\s*([\d./]+)(.*)$/u;
+    const mUF = amtPart.match(reUnitFirst);
+    if (mUF) {
+      return { name: namePart, numStr: mUF[2], unit: mUF[1], suffix: mUF[3].trim(), isAmbiguous: false, ambiguousNote: null };
+    }
+
+    // 「300g」「2個」— 数字が先
+    const reNumFirst = /^([\d./]+)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*)$/u;
+    const mNF = amtPart.match(reNumFirst);
+    if (mNF) {
+      return { name: namePart, numStr: mNF[1], unit: (mNF[2]||'').trim(), suffix: mNF[3].trim(), isAmbiguous: false, ambiguousNote: null };
+    }
   }
 
   const ambigMap = { '少々':'約0.5g','ひとつまみ':'約1g','適量':'（目安：少々〜小さじ1）','少量':'約1〜2g' };
