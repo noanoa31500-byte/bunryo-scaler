@@ -1,0 +1,20 @@
+{
+  "name": "分量スケーラ",
+  "short_name": "分量スケーラ",
+  "description": "レシピの人数変換・栄養計算・代替食材提案ツール",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%230f0f0f' rx='36'/><text x='96' y='130' font-size='96' text-anchor='middle' fill='%23e8ff3c'>⚖</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["food", "utilities"]
+}

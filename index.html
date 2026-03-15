@@ -1,0 +1,2510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分量スケーラ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0f0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="分量スケーラ">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #1a1a1a;
+    --bg3: #242424;
+    --bg4: #2e2e2e;
+    --border: #333;
+    --border2: #444;
+    --accent: #e8ff3c;
+    --accent-dim: rgba(232,255,60,0.12);
+    --accent-dim2: rgba(232,255,60,0.06);
+    --text: #f0f0f0;
+    --text2: #a0a0a0;
+    --text3: #666;
+    --p-color: #6bffb8;
+    --f-color: #ff7b7b;
+    --c-color: #e8ff3c;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ─────────────────────────────── */
+  header { padding: 32px 24px 0; max-width: 860px; margin: 0 auto; }
+  .logo { display: flex; align-items: baseline; gap: 10px; }
+  .logo-title { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: var(--accent); }
+  .logo-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--text3);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  /* ── MAIN ────────────────────────────────── */
+  main {
+    max-width: 860px; margin: 0 auto;
+    padding: 24px 24px 80px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  /* ── CARD ────────────────────────────────── */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border); gap: 12px;
+    cursor: default;
+  }
+  .card-header.toggleable { cursor: pointer; user-select: none; }
+  .card-header.toggleable:hover { background: var(--bg3); }
+  .card-title {
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text2);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .card-body { padding: 20px; }
+  .card-header-right { display: flex; align-items: center; gap: 8px; }
+
+  /* ── FORM ────────────────────────────────── */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); }
+
+  input[type="number"], input[type="text"], textarea {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: inherit; font-size: 14px; padding: 10px 12px;
+    outline: none; transition: border-color 0.15s;
+    width: 100%; appearance: none; -webkit-appearance: none;
+  }
+  input[type="number"]:focus, input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder, textarea::placeholder { color: var(--text3); }
+  textarea { resize: vertical; min-height: 180px; font-size: 13px; line-height: 1.9; }
+  .number-row { display: flex; gap: 12px; align-items: flex-end; }
+  .number-row .field { flex: 1; }
+  .arrow-label { font-size: 22px; color: var(--text3); padding-bottom: 10px; flex-shrink: 0; user-select: none; }
+
+  /* ── BUTTONS ─────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    border: none; border-radius: var(--radius-sm);
+    cursor: pointer; transition: all 0.15s;
+    letter-spacing: 0.02em; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: #0f0f0f; padding: 11px 22px; }
+  .btn-primary:hover { background: #f5ff6e; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); padding: 5px 10px; font-size: 11px; }
+  .btn-ghost:hover { background: var(--bg3); color: var(--accent); border-color: var(--accent); }
+  .btn-alt { background: var(--bg3); color: var(--accent); border: 1px solid var(--accent); padding: 5px 10px; font-size: 11px; }
+  .btn-alt:hover { background: var(--accent-dim); }
+  .btn-save { background: var(--bg3); color: var(--text2); border: 1px solid var(--border2); padding: 11px 18px; }
+  .btn-save:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--text3); border: 1px solid transparent; padding: 4px 8px; font-size: 11px; }
+  .btn-danger:hover { color: var(--f-color); border-color: var(--f-color); background: rgba(255,123,123,0.08); }
+  .action-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+
+  /* ── RESULT TABLE ────────────────────────── */
+  .result-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .result-table th {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text3); font-weight: 500;
+    padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .result-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .result-table tr:last-child td { border-bottom: none; }
+  .result-table tr:hover td { background: var(--bg3); }
+  .ing-name { font-weight: 500; }
+  .ing-amount { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent); }
+  .ing-note { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .ing-ambiguous { font-size: 11px; color: #ffb347; margin-top: 2px; font-style: italic; }
+  .ing-calorie { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); text-align: right; }
+  .table-wrap { overflow-x: auto; }
+
+  /* ── MODE TOGGLE ────────────────────────── */
+  .mode-toggle { display: flex; gap: 0; border: 1px solid var(--border2); border-radius: var(--radius-sm); overflow: hidden; }
+  .mode-btn { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 12px; background: transparent; color: var(--text3); border: none; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .mode-btn.active { background: var(--accent); color: #0f0f0f; font-weight: 600; }
+  .mode-btn:not(.active):hover { background: var(--bg3); color: var(--text2); }
+
+  /* ── BAKER'S % TABLE ─────────────────────── */
+  .bp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .bp-table th { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); font-weight: 500; padding: 8px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+  .bp-table td { padding: 11px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .bp-table tr:last-child td { border-bottom: none; }
+  .bp-table tr:hover td { background: var(--bg3); }
+  .bp-base-row td { background: var(--accent-dim2) !important; }
+  .bp-pct { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; color: var(--accent); }
+  .bp-bar-track { width: 100%; height: 5px; background: var(--bg4); border-radius: 3px; margin-top: 5px; overflow: hidden; }
+  .bp-bar-fill  { height: 100%; border-radius: 3px; background: var(--accent); max-width: 100%; }
+  .bp-flour-input { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  .bp-flour-input label { font-size: 11px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .bp-flour-input input { width: 80px; font-family: 'DM Mono', monospace; }
+  .bp-total-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--accent-dim2); font-size: 13px; }
+
+  /* ── DIET PROFILE ───────────────────────── */
+  .diet-bar { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 20px; border-bottom: 1px solid var(--border); }
+  .diet-chip {
+    font-size: 11px; font-family: 'DM Mono', monospace; letter-spacing: 0.04em;
+    padding: 4px 11px; border-radius: 20px; cursor: pointer;
+    border: 1px solid var(--border2); background: transparent; color: var(--text3);
+    transition: all 0.15s;
+  }
+  .diet-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .diet-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .diet-flag {
+    display: inline-block; font-size: 10px; font-weight: 600; font-family: 'DM Mono', monospace;
+    padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+    white-space: nowrap;
+  }
+  .diet-flag-ng  { background: rgba(255,123,123,0.15); color: #ff7b7b; border: 1px solid rgba(255,123,123,0.3); }
+  .diet-flag-ok  { background: rgba(107,255,184,0.12); color: #6bffb8; border: 1px solid rgba(107,255,184,0.25); }
+  .result-table tr.diet-ng td { background: rgba(255,123,123,0.04); }
+
+  /* ── SUBSTITUTE ──────────────────────────── */
+  .sub-panel {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 10px 12px;
+    margin-top: 8px; display: none; animation: fadeIn 0.15s ease;
+  }
+  .sub-panel.open { display: block; }
+  .sub-title { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+  .sub-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .sub-list li {
+    font-size: 12px; color: var(--text2);
+    padding: 4px 8px; background: var(--bg4);
+    border-radius: 4px; border-left: 2px solid var(--accent);
+  }
+
+  /* ── TOTAL ROW ───────────────────────────── */
+  .total-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; background: var(--accent-dim2);
+    border-top: 1px solid var(--border); font-size: 13px;
+  }
+  .total-label { font-weight: 500; color: var(--text2); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .total-value { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--accent); }
+  .total-per { font-size: 12px; color: var(--text3); margin-left: 4px; }
+
+  /* ── NUTRITION SECTION ───────────────────── */
+  .nutr-section { border-top: 1px solid var(--border); }
+  .nutr-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+  }
+  .nutr-wrap {
+    display: grid; grid-template-columns: 180px 1fr;
+    gap: 24px; padding: 20px; align-items: center;
+  }
+  .nutr-canvas-wrap { position: relative; width: 160px; height: 160px; margin: 0 auto; }
+  canvas#nutritionChart { display: block; width: 160px; height: 160px; }
+  .nutr-legend { display: flex; flex-direction: column; gap: 12px; }
+  .nutr-item { display: flex; flex-direction: column; gap: 4px; }
+  .nutr-item-header { display: flex; align-items: center; justify-content: space-between; }
+  .nutr-dot-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+  .nutr-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .nutr-val { font-family: 'DM Mono', monospace; font-size: 13px; }
+  .nutr-pct { font-size: 10px; color: var(--text3); margin-left: 4px; }
+  .nutr-bar-track { width: 100%; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+  .nutr-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s cubic-bezier(0.22,1,0.36,1); }
+  .nutr-kcal-note { font-size: 10px; color: var(--text3); padding: 0 20px 12px; text-align: right; }
+
+  /* ── COST SECTION ───────────────────────── */
+  .cost-section { border-top: 1px solid var(--border); }
+  .cost-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; cursor: pointer; user-select: none; }
+  .cost-header:hover { background: var(--bg3); }
+  .cost-body { padding: 0 20px 16px; }
+  .cost-grid { display: grid; grid-template-columns: 1fr auto auto; gap: 0; }
+  .cost-row { display: contents; }
+  .cost-row > * { padding: 7px 8px; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; align-items: center; }
+  .cost-row:last-child > * { border-bottom: none; }
+  .cost-ing-name { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cost-price-wrap { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .cost-price-wrap input { width: 72px; padding: 4px 8px; font-size: 12px; font-family: 'DM Mono', monospace; }
+  .cost-price-wrap span { font-size: 11px; color: var(--text3); }
+  .cost-calc { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); text-align: right; white-space: nowrap; min-width: 70px; justify-content: flex-end; }
+  .cost-total-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .cost-total-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .cost-total-val { font-family: 'DM Mono', monospace; font-size: 18px; color: var(--accent); font-weight: 500; }
+  .cost-total-per { font-size: 12px; color: var(--text3); margin-left: 4px; }
+  .cost-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* ── ALLERGEN + SODIUM ───────────────────── */
+  .allergen-section { border-top: 1px solid var(--border); padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .allergen-row { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .allergen-row-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); padding-top: 3px; flex-shrink: 0; width: 70px; }
+  .allergen-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .a-pill {
+    font-size: 10px; font-weight: 500; padding: 2px 8px;
+    border-radius: 20px; border: 1px solid; white-space: nowrap;
+    font-family: 'DM Mono', monospace;
+  }
+  .a-pill-mandatory { color: #ff9f7b; border-color: rgba(255,159,123,0.35); background: rgba(255,159,123,0.1); }
+  .a-pill-advisory  { color: var(--text2); border-color: var(--border2); background: var(--bg3); }
+  .a-none { font-size: 11px; color: var(--text3); padding-top: 2px; }
+  /* Per-ingredient mini tags */
+  .ing-allergens { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+  .a-mini {
+    font-size: 9px; padding: 1px 5px; border-radius: 10px;
+    border: 1px solid rgba(255,159,123,0.3);
+    color: #ff9f7b; background: rgba(255,159,123,0.08);
+    font-family: 'DM Mono', monospace; white-space: nowrap;
+  }
+  /* Sodium bar */
+  .sodium-wrap { display: flex; flex-direction: column; gap: 5px; }
+  .sodium-header { display: flex; justify-content: space-between; align-items: baseline; }
+  .sodium-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); }
+  .sodium-vals { font-family: 'DM Mono', monospace; font-size: 12px; }
+  .sodium-val-main { color: var(--text); }
+  .sodium-val-per  { font-size: 10px; color: var(--text3); margin-left: 8px; }
+  .sodium-track { width: 100%; height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; position: relative; }
+  .sodium-fill  { height: 100%; border-radius: 3px; transition: width 0.5s cubic-bezier(0.22,1,0.36,1); }
+  .sodium-limit { font-size: 10px; color: var(--text3); text-align: right; margin-top: 2px; }
+
+  /* toggle */
+  .toggle-group { display: flex; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .toggle-btn { font-family: inherit; font-size: 11px; font-weight: 500; padding: 4px 12px; border: none; cursor: pointer; background: transparent; color: var(--text3); transition: all 0.15s; }
+  .toggle-btn.active { background: var(--accent); color: #0f0f0f; }
+  .toggle-btn:hover:not(.active) { color: var(--text2); }
+
+  @media (max-width: 520px) {
+    .nutr-wrap { grid-template-columns: 1fr; }
+    .nutr-canvas-wrap { width: 140px; height: 140px; }
+    canvas#nutritionChart { width: 140px; height: 140px; }
+  }
+
+  /* ── SAVED RECIPES ───────────────────────── */
+  .collapse-body { overflow: hidden; transition: max-height 0.3s ease; }
+  .collapse-body.closed { max-height: 0 !important; }
+  .chevron { font-size: 12px; color: var(--text3); transition: transform 0.2s; }
+  .chevron.open { transform: rotate(180deg); }
+  .recipe-list { display: flex; flex-direction: column; }
+  .recipe-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; border-bottom: 1px solid var(--border);
+    font-size: 13px; transition: background 0.1s;
+  }
+  .recipe-item:last-child { border-bottom: none; }
+  .recipe-item:hover { background: var(--bg3); }
+  .recipe-item-name { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .recipe-item-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); flex-shrink: 0; }
+  .recipe-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .badge { font-family: 'DM Mono', monospace; font-size: 10px; background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(232,255,60,0.25); border-radius: 4px; padding: 1px 6px; flex-shrink: 0; }
+  .badge-count { font-family: 'DM Mono', monospace; font-size: 10px; background: var(--bg3); color: var(--text3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; }
+  .empty-recipes { padding: 24px; text-align: center; color: var(--text3); font-size: 12px; }
+
+  /* ── MODAL ───────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+    animation: fadeIn 0.15s ease;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 24px;
+    width: 100%; max-width: 380px;
+    animation: slideUp 0.2s ease;
+  }
+  .modal-title { font-size: 14px; font-weight: 500; margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* ── QR MODAL ────────────────────────────── */
+  .qr-modal { max-width: 320px; text-align: center; }
+  .qr-wrap { background: #fff; border-radius: 10px; padding: 16px; display: inline-block; margin: 12px 0; }
+  .qr-wrap canvas { display: block; }
+  .qr-url {
+    font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3);
+    word-break: break-all; margin-top: 8px; line-height: 1.5;
+  }
+  .qr-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* ── MISC ────────────────────────────────── */
+  .citation { font-size: 10px; color: var(--text3); text-align: right; padding: 8px 20px; border-top: 1px solid var(--border); font-family: 'DM Mono', monospace; }
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
+  .empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.3; }
+  .empty-state p { font-size: 13px; line-height: 2; }
+  .notice {
+    background: var(--accent-dim); border: 1px solid rgba(232,255,60,0.25);
+    border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px;
+    color: rgba(232,255,60,0.8); margin-bottom: 16px;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .hint { font-size: 11px; color: var(--text3); line-height: 1.6; }
+
+  /* ── VOICE INPUT ─────────────────────────── */
+  .field-label-row { display: flex; align-items: center; justify-content: space-between; }
+  .field-label-row label { margin-bottom: 0; }
+  .mic-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; flex-shrink: 0;
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 50%; cursor: pointer;
+    transition: all 0.15s; color: var(--text3);
+  }
+  .mic-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .mic-btn.listening {
+    background: rgba(255,100,100,0.15); border-color: #ff6464; color: #ff6464;
+    animation: micPulse 1.2s ease-in-out infinite;
+  }
+  .mic-btn.hidden { display: none; }
+  .voice-status {
+    font-size: 11px; min-height: 18px; margin-top: 4px;
+    color: var(--text3); transition: color 0.2s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .voice-status.active { color: #ff9090; }
+  @keyframes micPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,100,100,0.5); }
+    50%      { box-shadow: 0 0 0 7px rgba(255,100,100,0); }
+  }
+
+  .scale-badge { font-family: 'DM Mono', monospace; font-size: 10px; background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(232,255,60,0.3); border-radius: 4px; padding: 2px 7px; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    .number-row { flex-wrap: wrap; }
+    .arrow-label { display: none; }
+    .result-table th:nth-child(3), .result-table td:nth-child(3) { display: none; }
+    .recipe-item-meta { display: none; }
+  }
+
+  /* ── TIMER ───────────────────────────────── */
+  .timer-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .timer-add-row { display: flex; gap: 8px; align-items: center; padding: 14px 20px; flex-wrap: wrap; }
+  .timer-add-row input[type="text"]   { flex: 1; min-width: 120px; }
+  .timer-add-row input[type="number"] { width: 64px; }
+  .timer-list { display: flex; flex-direction: column; }
+  .timer-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; border-top: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .timer-item:hover { background: var(--bg3); }
+  .timer-name { flex: 1; font-size: 13px; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .timer-display {
+    font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500;
+    min-width: 72px; text-align: center; letter-spacing: 0.05em;
+  }
+  .timer-display.running  { color: var(--accent); }
+  .timer-display.done     { color: #ff7b7b; animation: timerDone 0.6s ease infinite alternate; }
+  .timer-display.idle     { color: var(--text2); }
+  .timer-btns { display: flex; gap: 5px; flex-shrink: 0; }
+  .timer-ring { width: 36px; height: 36px; flex-shrink: 0; }
+  .timer-ring circle { transition: stroke-dashoffset 1s linear; }
+  @keyframes timerDone { from { opacity:1; } to { opacity:0.3; } }
+
+  /* ── PRINT ───────────────────────────────── */
+  @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    body { background: #fff; color: #111; font-size: 13px; }
+
+    header, #savedCard, #emptyState, #timerCard,
+    .action-row, .card-header .card-header-right,
+    .btn-primary, .btn-save, .btn-ghost, .btn-alt, .btn-danger,
+    .nutr-section, .notice, .hint,
+    #micBtn, .voice-status,
+    nav, .modal-overlay { display: none !important; }
+
+    main { padding: 0; gap: 12px; }
+
+    .card { border: 1px solid #ccc; border-radius: 6px; box-shadow: none; background: #fff; }
+    .card-header { padding: 10px 14px; border-bottom: 1px solid #ddd; background: #f8f8f8; }
+    .card-title { color: #333; font-size: 11px; }
+    .card-title .dot { background: #333; }
+    .card-body { padding: 14px; }
+
+    textarea, input[type="number"] { border: 1px solid #ddd; background: #fafafa; color: #111; font-size: 12px; }
+
+    .result-table { font-size: 12px; }
+    .result-table th { color: #666; border-bottom: 1px solid #ddd; }
+    .result-table td { border-bottom: 1px solid #eee; padding: 8px 10px; }
+    .result-table tr:hover td { background: transparent; }
+    .ing-name { color: #111; }
+    .ing-amount { color: #333; }
+    .ing-note, .ing-ambiguous { color: #666; }
+    .ing-calorie { color: #444; }
+
+    .sub-panel { display: none !important; }
+    .total-row { background: #f5f5f5; border-top: 1px solid #ccc; }
+    .total-label { color: #666; }
+    .total-value { color: #111; font-size: 16px; }
+    .total-per { color: #888; }
+
+    .scale-badge { border: 1px solid #ccc; color: #333; background: #f5f5f5; }
+
+    .citation { color: #999; border-top: 1px solid #eee; }
+
+    .print-footer {
+      display: block !important;
+      text-align: center; font-size: 10px; color: #aaa;
+      margin-top: 16px; padding-top: 8px; border-top: 1px solid #eee;
+    }
+  }
+  .print-footer { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div class="logo">
+      <span class="logo-title">分量スケーラ</span>
+      <span class="logo-sub">Recipe Scaler</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="planner.html" style="font-size:11px;color:var(--text3);text-decoration:none;font-family:'DM Mono',monospace;border:1px solid var(--border);border-radius:6px;padding:4px 10px;transition:all 0.15s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)';" onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--border)';">週間プランナー</a>
+      <a href="pantry.html" style="font-size:11px;color:var(--text3);text-decoration:none;font-family:'DM Mono',monospace;border:1px solid var(--border);border-radius:6px;padding:4px 10px;transition:all 0.15s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)';" onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--border)';">食材在庫</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- SAVED RECIPES CARD -->
+  <div class="card" id="savedCard">
+    <div class="card-header toggleable" onclick="toggleSavedPanel()">
+      <span class="card-title"><span class="dot"></span>保存済みレシピ</span>
+      <div class="card-header-right">
+        <span class="badge-count" id="recipeCount">0</span>
+        <button class="btn btn-ghost" onclick="exportRecipes(event)" title="JSONでエクスポート" style="font-size:10px;padding:3px 8px;">書き出し</button>
+        <label class="btn btn-ghost" style="font-size:10px;padding:3px 8px;cursor:pointer;" title="JSONからインポート">
+          読み込み<input type="file" accept=".json" style="display:none;" onchange="importRecipes(event)">
+        </label>
+        <span class="chevron" id="savedChevron">▼</span>
+      </div>
+    </div>
+    <div class="collapse-body closed" id="savedBody" style="max-height:0;">
+      <div class="recipe-list" id="recipeList">
+        <div class="empty-recipes">保存されたレシピはありません</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><span class="dot"></span>レシピ入力</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="modeNormal" onclick="setMode('normal')">通常</button>
+        <button class="mode-btn"        id="modeBaker"  onclick="setMode('baker')">ベーカーズ%</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="notice">
+        <span>↗</span>
+        <span>各行に「材料名 分量単位」の形式で入力。例：<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">砂糖 大さじ2</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">鶏もも肉 300g</code>&thinsp;<code style="font-family:'DM Mono',monospace;background:rgba(232,255,60,0.1);padding:1px 5px;border-radius:3px;">塩 少々</code></span>
+      </div>
+      <div class="field" style="margin-bottom:16px;">
+        <div class="field-label-row">
+          <label>材料リスト</label>
+          <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="音声入力（クリックして開始）">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="1" width="6" height="8" rx="3"/>
+              <path d="M2 7a5 5 0 0 0 10 0"/>
+              <line x1="7" y1="12" x2="7" y2="14"/>
+              <line x1="4.5" y1="14" x2="9.5" y2="14"/>
+            </svg>
+          </button>
+        </div>
+        <textarea id="ingredientInput" placeholder="砂糖 大さじ2&#10;醤油 大さじ3&#10;みりん 大さじ2&#10;鶏もも肉 300g&#10;玉ねぎ 1個&#10;卵 2個&#10;牛乳 カップ1/2&#10;塩 少々&#10;バター 10g"></textarea>
+        <div class="voice-status" id="voiceStatus"></div>
+        <div class="hint">対応単位：g / kg / ml / L / 大さじ / 小さじ / カップ / 個 / 本 / 枚 / かけ / 片 / 少々 / ひとつまみ / 適量 / 少量 / 山盛り</div>
+      </div>
+      <div class="number-row" id="normalModeControls">
+        <div class="field">
+          <label>元の人数</label>
+          <input type="number" id="fromPerson" value="2" min="0.5" step="0.5">
+        </div>
+        <div class="arrow-label">→</div>
+        <div class="field">
+          <label>変換後の人数</label>
+          <input type="number" id="toPerson" value="4" min="0.5" step="0.5">
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-primary" onclick="_appMode==='baker'?runBaker():convert()">変換する</button>
+        <button class="btn btn-save" id="saveBtn" onclick="openSaveModal()" style="display:none;">保存</button>
+        <button class="btn btn-ghost" id="qrBtn" onclick="openQrModal()" style="display:none;">QR共有</button>
+        <button class="btn btn-ghost" id="printBtn" onclick="window.print()" style="display:none;">印刷</button>
+        <button class="btn btn-ghost" onclick="clearAll()">クリア</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT CARD -->
+  <div class="card" id="resultCard" style="display:none;">
+    <div class="card-header">
+      <span class="card-title"><span class="dot"></span>変換結果</span>
+      <span class="scale-badge" id="scaleBadge"></span>
+    </div>
+    <!-- DIET PROFILE BAR -->
+    <div class="diet-bar" id="dietBar" style="display:none;">
+      <button class="diet-chip" id="chip-gf"   onclick="toggleDiet('gf')">グルテンフリー</button>
+      <button class="diet-chip" id="chip-vegan" onclick="toggleDiet('vegan')">ヴィーガン</button>
+      <button class="diet-chip" id="chip-lowc"  onclick="toggleDiet('lowc')">糖質制限</button>
+      <button class="diet-chip" id="chip-lowsalt" onclick="toggleDiet('lowsalt')">減塩</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th style="width:28%">材料</th>
+            <th style="width:28%">分量</th>
+            <th style="width:14%">kcal</th>
+            <th style="width:30%">代替食材</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
+    <div class="total-row" id="totalRow" style="display:none;">
+      <span class="total-label">合計カロリー</span>
+      <div>
+        <span class="total-value" id="totalCalorie"></span>
+        <span class="total-per" id="totalPer"></span>
+      </div>
+    </div>
+
+    <!-- NUTRITION SECTION -->
+    <div class="nutr-section" id="nutrSection" style="display:none;">
+      <div class="nutr-header">
+        <span class="card-title" style="font-size:12px;"><span class="dot" style="background:var(--p-color)"></span>栄養バランス（PFC）</span>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="toggleTotal" onclick="setNutrView('total')">合計</button>
+          <button class="toggle-btn" id="togglePer" onclick="setNutrView('per')">1人前</button>
+        </div>
+      </div>
+      <div class="nutr-wrap">
+        <div class="nutr-canvas-wrap">
+          <canvas id="nutritionChart"></canvas>
+        </div>
+        <div class="nutr-legend" id="nutrLegend"></div>
+      </div>
+      <div class="nutr-kcal-note" id="nutrKcalNote"></div>
+    </div>
+
+    <!-- ALLERGEN + SODIUM SECTION -->
+    <div class="allergen-section" id="allergenSection" style="display:none;">
+      <div class="allergen-row">
+        <span class="allergen-row-label">アレルゲン</span>
+        <div class="allergen-pills" id="allergenPills"></div>
+      </div>
+      <div class="sodium-wrap" id="sodiumWrap" style="display:none;">
+        <div class="sodium-header">
+          <span class="sodium-label">塩分（Na換算）</span>
+          <span class="sodium-vals">
+            <span class="sodium-val-main" id="sodiumTotal"></span>
+            <span class="sodium-val-per"  id="sodiumPer"></span>
+          </span>
+        </div>
+        <div class="sodium-track">
+          <div class="sodium-fill" id="sodiumFill"></div>
+        </div>
+        <div class="sodium-limit" id="sodiumLimit"></div>
+      </div>
+    </div>
+
+    <!-- COST SECTION -->
+    <div class="cost-section" id="costSection" style="display:none;">
+      <div class="cost-header" onclick="toggleCostBody()">
+        <span class="card-title" style="font-size:12px;"><span class="dot" style="background:#ffb347;"></span>コスト計算</span>
+        <span class="chevron" id="costChevron">▼</span>
+      </div>
+      <div id="costBody" style="display:none;">
+        <div class="cost-body">
+          <div class="cost-hint">各材料の購入価格（円）と内容量（g/ml）を入力すると使用コストを自動計算します</div>
+          <div style="height:10px;"></div>
+          <div class="cost-grid" id="costGrid"></div>
+          <div class="cost-total-row" id="costTotalRow" style="display:none;">
+            <span class="cost-total-label">合計コスト</span>
+            <div>
+              <span class="cost-total-val" id="costTotalVal">—</span>
+              <span class="cost-total-per" id="costTotalPer"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="citation">カロリー・栄養データ：文部科学省 日本食品標準成分表2020年版（八訂）</div>
+    <div class="print-footer">分量スケーラ — recipe-scaler | カロリー：文部科学省 日本食品標準成分表2020年版（八訂）</div>
+  </div>
+
+  <!-- BAKER'S % CARD -->
+  <div class="card" id="bakerCard" style="display:none;">
+    <div class="card-header">
+      <span class="card-title"><span class="dot" style="background:#ffb347;"></span>ベーカーズパーセント</span>
+      <span class="scale-badge" id="bakerBadge"></span>
+    </div>
+    <div class="bp-flour-input">
+      <label>粉量（g）</label>
+      <input type="number" id="bakerFlourG" min="1" step="1" placeholder="例：300" oninput="updateBakerTable()">
+      <span style="font-size:12px;color:var(--text3);">を入力するとすべての分量を自動計算</span>
+    </div>
+    <div class="table-wrap">
+      <table class="bp-table">
+        <thead>
+          <tr>
+            <th style="width:32%">材料</th>
+            <th style="width:20%">ベーカーズ%</th>
+            <th style="width:22%">比率バー</th>
+            <th style="width:26%">換算量（g）</th>
+          </tr>
+        </thead>
+        <tbody id="bakerBody"></tbody>
+      </table>
+    </div>
+    <div class="bp-total-row" id="bakerTotalRow" style="display:none;">
+      <span style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;">生地合計</span>
+      <span id="bakerTotalG" style="font-family:'DM Mono',monospace;font-size:14px;color:var(--text);"></span>
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState" class="card">
+    <div class="empty-state">
+      <div class="icon">⚖</div>
+      <p>材料を入力して「変換する」を押すと<br>スケール後の分量・栄養バランス・代替食材が表示されます</p>
+    </div>
+  </div>
+
+  <!-- TIMER CARD -->
+  <div class="card timer-card" id="timerCard">
+    <div class="card-header toggleable" onclick="toggleTimerPanel()">
+      <span class="card-title"><span class="dot" style="background:#6bffb8;"></span>調理タイマー</span>
+      <div class="card-header-right">
+        <span class="badge-count" id="timerCount">0</span>
+        <span class="chevron" id="timerChevron">▼</span>
+      </div>
+    </div>
+    <div class="collapse-body closed" id="timerBody" style="max-height:0;">
+      <div class="timer-add-row">
+        <input type="text" id="timerName" placeholder="名前（例：煮込み）" class="input" style="flex:1;min-width:100px;">
+        <input type="number" id="timerMin" placeholder="分" min="0" max="999" class="input" style="width:60px;">
+        <input type="number" id="timerSec" placeholder="秒" min="0" max="59"  class="input" style="width:60px;">
+        <button class="btn btn-primary" onclick="addTimer()" style="padding:8px 16px;">追加</button>
+      </div>
+      <div class="timer-list" id="timerList"></div>
+      <div id="timerEmpty" style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">タイマーを追加してください</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- QR MODAL -->
+<div class="modal-overlay hidden" id="qrModal" onclick="onQrOverlayClick(event)">
+  <div class="modal qr-modal">
+    <div class="modal-title">QRコードで共有</div>
+    <div class="qr-wrap"><canvas id="qrCanvas"></canvas></div>
+    <div class="qr-url" id="qrUrl"></div>
+    <div class="qr-hint">スマホのカメラで読み取るとレシピが開きます</div>
+    <div class="modal-actions" style="justify-content:center;margin-top:12px;">
+      <button class="btn btn-ghost" onclick="closeQrModal()">閉じる</button>
+      <button class="btn btn-primary" onclick="downloadQr()">画像保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE MODAL -->
+<div class="modal-overlay hidden" id="saveModal" onclick="onModalOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-title">レシピに名前をつけて保存</div>
+    <div class="field">
+      <label>レシピ名</label>
+      <input type="text" id="recipeNameInput" placeholder="例：鶏の照り焼き（4人前）" maxlength="40">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSaveModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="confirmSave()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+
+const substitutes = {
+  "牛乳": ["豆乳（同量・弱火で使用）","オーツミルク（同量）","アーモンドミルク（同量）"],
+  "バター": ["マーガリン（同量）","サラダ油（0.8倍量）","オリーブオイル（0.8倍量）"],
+  "生クリーム": ["絹ごし豆腐をミキサーでなめらかに","豆乳クリーム（同量）"],
+  "マヨネーズ": ["プレーンヨーグルト＋塩こしょう","豆腐マヨ（絹豆腐＋酢＋塩）"],
+  "卵": ["片栗粉＋水（衣用）","重曹＋バナナ（膨らませ用）","ゼラチン（固める用）"],
+  "小麦粉": ["米粉＋片栗粉（1:1）","コーンスターチ（とろみ用）"],
+  "みりん": ["日本酒大さじ1＋砂糖小さじ1","甘酒大さじ1＋砂糖少々（アルコール不使用）"],
+  "醤油": ["塩（塩分量を合わせて）","味噌（同量・風味変わる）"],
+  "砂糖": ["はちみつ0.7倍量（甘みが強い）","みりん（液体料理向け）"],
+  "サラダ油": ["米油（同量・クセなし）","なたね油（同量）","ごま油（少量・風味あり）"],
+  "鶏もも肉": ["鶏むね肉（加熱時間を短く）","大豆ミート（同量）"],
+  "鶏むね肉": ["鶏もも肉（加熱時間を長く）","豆腐ステーキ"],
+  "挽き肉": ["大豆ミート（同量）","おから混合（増量用）"],
+  "豚バラ肉": ["鶏もも肉（脂少なめ）","凍り豆腐（ヘルシー）"],
+  "れんこん": ["ごぼう（同量）","かぶ（食感近い）"],
+  "ごぼう": ["れんこん（同量）","セロリ（食感代用）"],
+  "片栗粉": ["コーンスターチ（同量）","米粉（同量）"],
+  "コーンスターチ": ["片栗粉（同量）","米粉（同量）"],
+  "ベーキングパウダー": ["重曹小さじ1/4＋片栗粉小さじ1/4＋酢少々"],
+  "だし汁": ["水＋顆粒だし（表示通り）","昆布水（昆布を一晩水に浸けたもの）"],
+  "タラ": ["カレイ（同量）","ホッケ（同量）"],
+  "サーモン": ["ブリ（同量）","マグロ（同量）"],
+  "白身魚": ["豆腐ステーキ（ヘルシー）","高野豆腐（煮物用）"],
+  "三杯酢": ["酢大さじ3＋醤油大さじ1＋砂糖大さじ1"],
+  "パスタ": ["米粉パスタ（同量・グルテンフリー）","ビーフン（同量）"],
+  "うどん": ["米粉麺（同量）","フォー（同量）"],
+};
+
+// per 100g: { kcal, p=protein, f=fat, c=carbs, s=sodium(mg) }
+// 文部科学省 日本食品標準成分表2020年版（八訂）準拠
+const nutritionDB = {
+  "砂糖":       {kcal:384,p:0,   f:0,    c:99.2, s:1},
+  "塩":         {kcal:0,  p:0,   f:0,    c:0,    s:39000},
+  "醤油":       {kcal:71, p:7.7, f:0,    c:7.9,  s:5700},
+  "みりん":     {kcal:241,p:0.3, f:0,    c:54.9, s:40},
+  "酢":         {kcal:25, p:0.1, f:0,    c:2.4,  s:8},
+  "サラダ油":   {kcal:921,p:0,   f:100,  c:0,    s:0},
+  "ごま油":     {kcal:921,p:0,   f:100,  c:0,    s:0},
+  "オリーブオイル":{kcal:921,p:0,f:100,  c:0,    s:0},
+  "バター":     {kcal:745,p:0.5, f:81.0, c:0.2,  s:750},
+  "小麦粉":     {kcal:368,p:8.3, f:1.5,  c:75.8, s:2},
+  "片栗粉":     {kcal:338,p:0.1, f:0.1,  c:86.8, s:2},
+  "米粉":       {kcal:374,p:6.0, f:0.7,  c:81.3, s:2},
+  "コーンスターチ":{kcal:354,p:0.1,f:0.7,c:86.3, s:2},
+  "米":         {kcal:358,p:6.1, f:0.9,  c:77.6, s:2},
+  "パスタ":     {kcal:378,p:13.0,f:1.9,  c:72.2, s:2},
+  "うどん":     {kcal:270,p:6.1, f:0.6,  c:56.8, s:500},
+  "そば":       {kcal:274,p:9.8, f:1.0,  c:54.0, s:50},
+  "鶏もも肉":   {kcal:204,p:16.6,f:14.2, c:0,    s:70},
+  "鶏むね肉":   {kcal:133,p:23.3,f:1.9,  c:0,    s:42},
+  "豚バラ肉":   {kcal:395,p:14.4,f:35.4, c:0.1,  s:55},
+  "牛肉":       {kcal:272,p:17.1,f:22.3, c:0.3,  s:55},
+  "卵":         {kcal:151,p:12.3,f:10.3, c:0.3,  s:140},
+  "牛乳":       {kcal:67, p:3.3, f:3.8,  c:4.8,  s:41},
+  "豆乳":       {kcal:46, p:3.6, f:2.0,  c:3.1,  s:2},
+  "生クリーム": {kcal:433,p:2.0, f:45.0, c:3.1,  s:40},
+  "豆腐":       {kcal:56, p:5.3, f:3.5,  c:1.6,  s:8},
+  "絹ごし豆腐": {kcal:56, p:5.3, f:3.5,  c:1.6,  s:8},
+  "木綿豆腐":   {kcal:73, p:7.0, f:4.3,  c:1.5,  s:10},
+  "高野豆腐":   {kcal:529,p:50.5,f:34.1, c:4.2,  s:400},
+  "にんじん":   {kcal:39, p:0.7, f:0.1,  c:9.3,  s:28},
+  "玉ねぎ":     {kcal:37, p:1.0, f:0.1,  c:8.8,  s:2},
+  "じゃがいも": {kcal:76, p:1.8, f:0.1,  c:17.3, s:1},
+  "さつまいも": {kcal:132,p:1.2, f:0.2,  c:31.9, s:11},
+  "キャベツ":   {kcal:23, p:1.3, f:0.2,  c:5.2,  s:5},
+  "ほうれん草": {kcal:20, p:2.2, f:0.4,  c:3.1,  s:16},
+  "トマト":     {kcal:20, p:0.7, f:0.1,  c:4.7,  s:3},
+  "なす":       {kcal:18, p:1.1, f:0.1,  c:4.1,  s:0},
+  "れんこん":   {kcal:66, p:1.9, f:0.1,  c:15.5, s:24},
+  "ごぼう":     {kcal:65, p:1.8, f:0.1,  c:15.4, s:18},
+  "かぼちゃ":   {kcal:91, p:1.9, f:0.3,  c:20.6, s:1},
+  "ブロッコリー":{kcal:33, p:4.3, f:0.5,  c:5.2,  s:20},
+  "しいたけ":   {kcal:18, p:3.0, f:0.4,  c:3.7,  s:2},
+  "えのき":     {kcal:22, p:2.7, f:0.2,  c:7.6,  s:2},
+  "しめじ":     {kcal:14, p:2.7, f:0.5,  c:4.8,  s:2},
+  "サーモン":   {kcal:204,p:20.1,f:12.8, c:0.1,  s:59},
+  "タラ":       {kcal:77, p:17.6,f:0.2,  c:0.1,  s:110},
+  "まぐろ":     {kcal:125,p:26.4,f:1.4,  c:0.1,  s:45},
+  "えび":       {kcal:98, p:20.6,f:0.6,  c:0.3,  s:170},
+  "味噌":       {kcal:198,p:12.5,f:6.0,  c:21.9, s:4300},
+  "マヨネーズ": {kcal:703,p:1.5, f:76.0, c:3.6,  s:770},
+  "ケチャップ": {kcal:119,p:1.7, f:0.2,  c:27.4, s:1200},
+  "はちみつ":   {kcal:329,p:0.2, f:0,    c:81.9, s:3},
+  "ジャム":     {kcal:262,p:0.4, f:0.1,  c:66.3, s:30},
+};
+
+// ── アレルゲンDB ──────────────────────────────
+// mandatory = 特定原材料7品目, advisory = 推奨表示品目
+const allergenDB = [
+  // label, mandatory, keyword patterns
+  { label:'小麦', mandatory:true,  keys:['小麦粉','パスタ','うどん','パン粉','ベーキングパウダー','クレープ','ピザ','ラーメン','そうめん','素麺'] },
+  { label:'卵',   mandatory:true,  keys:['卵','たまご','マヨネーズ'] },
+  { label:'乳',   mandatory:true,  keys:['牛乳','バター','生クリーム','チーズ','ヨーグルト','ミルク','クリーム','練乳'] },
+  { label:'えび', mandatory:true,  keys:['えび','エビ','海老','桜えび'] },
+  { label:'かに', mandatory:true,  keys:['かに','カニ','蟹'] },
+  { label:'そば', mandatory:true,  keys:['そば','蕎麦'] },
+  { label:'落花生',mandatory:true, keys:['落花生','ピーナッツ','ピーナツ'] },
+  { label:'大豆', mandatory:false, keys:['豆腐','豆乳','味噌','醤油','枝豆','納豆','油揚げ','厚揚げ','高野豆腐','おから','大豆'] },
+  { label:'鶏肉', mandatory:false, keys:['鶏もも肉','鶏むね肉','鶏ひき肉','鶏肉','鶏ささみ','手羽'] },
+  { label:'豚肉', mandatory:false, keys:['豚バラ肉','豚肉','豚ひき肉','豚ロース','ベーコン','ハム','ソーセージ'] },
+  { label:'牛肉', mandatory:false, keys:['牛肉','牛バラ','牛ひき肉','ビーフ','牛すじ'] },
+  { label:'ごま', mandatory:false, keys:['ごま油','ごま','胡麻'] },
+  { label:'さけ', mandatory:false, keys:['サーモン','鮭','サケ'] },
+  { label:'さば', mandatory:false, keys:['さば','サバ','鯖'] },
+  { label:'いか', mandatory:false, keys:['いか','イカ','烏賊'] },
+];
+
+function getIngredientAllergens(name) {
+  return allergenDB.filter(a => a.keys.some(k => name.includes(k)));
+}
+
+function detectAllAllergens(ingredientNames) {
+  const found = new Map(); // label → mandatory
+  for (const name of ingredientNames) {
+    for (const a of getIngredientAllergens(name)) {
+      if (!found.has(a.label)) found.set(a.label, a.mandatory);
+    }
+  }
+  return found; // Map<label, mandatory>
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+
+function fmtN(n) {
+  if (n === 0) return '0';
+  if (Number.isInteger(n)) return String(n);
+  const fracs = [[0.5,'1/2'],[0.333,'1/3'],[0.667,'2/3'],[0.25,'1/4'],[0.75,'3/4'],[0.125,'1/8']];
+  for (const [val, label] of fracs) {
+    if (Math.abs(n - val) < 0.04) return label;
+  }
+  const whole = Math.floor(n);
+  const frac = n - whole;
+  if (whole > 0) {
+    for (const [val, label] of fracs) {
+      if (Math.abs(frac - val) < 0.04) return `${whole} ${label}`;
+    }
+  }
+  return parseFloat(n.toFixed(1)).toString();
+}
+
+function parseFrac(s) {
+  s = s.trim();
+  if (s.includes('/')) { const [a,b] = s.split('/'); return parseFloat(a)/parseFloat(b); }
+  return parseFloat(s) || 0;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ══════════════════════════════════════════
+// PARSING
+// ══════════════════════════════════════════
+
+function parseLine(line) {
+  line = line.trim();
+  if (!line) return null;
+
+  const reAmount = /^(.+?)\s+((\d+[\d./]*)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*))$/u;
+  const mA = line.match(reAmount);
+  if (mA) {
+    return { name: mA[1].trim(), numStr: mA[3], unit: (mA[4]||'').trim(), suffix: (mA[5]||'').trim(), isAmbiguous: false, ambiguousNote: null };
+  }
+
+  const ambigMap = { '少々':'約0.5g','ひとつまみ':'約1g','適量':'（目安：少々〜小さじ1）','少量':'約1〜2g' };
+  for (const [w, note] of Object.entries(ambigMap)) {
+    const idx = line.lastIndexOf(w);
+    if (idx > 0) return { name: line.slice(0,idx).trim()||line, numStr:null, unit:w, suffix:'', isAmbiguous:true, ambiguousNote:note };
+  }
+
+  const mYama = line.match(/^(.+?)\s+(山盛り\s*(\d[\d./]*)?\s*(大さじ|小さじ|g)?)$/u);
+  if (mYama) return { name:mYama[1].trim(), numStr:mYama[3]||null, unit:mYama[4]||'山盛り', suffix:'', isAmbiguous:false, ambiguousNote:'通常の約1.5倍', isMountain:true };
+
+  return { name:line, numStr:null, unit:'', suffix:'', isAmbiguous:false, ambiguousNote:null };
+}
+
+// ══════════════════════════════════════════
+// UNIT → GRAMS
+// ══════════════════════════════════════════
+
+const FAT_KEYS = ['サラダ油','ごま油','オリーブオイル','バター','マーガリン','油'];
+const POWDER_KEYS = ['砂糖','塩','小麦粉','片栗粉','米粉','コーンスターチ','ベーキングパウダー','きな粉','抹茶','パン粉'];
+
+function isType(name, keys) { return keys.some(k => name.includes(k)); }
+
+function unitToGrams(num, unit, name) {
+  const fat = isType(name, FAT_KEYS), powder = isType(name, POWDER_KEYS);
+  switch(unit) {
+    case '大さじ': return fat ? num*12 : powder ? num*9  : num*15;
+    case '小さじ': return fat ? num*4  : powder ? num*3  : num*5;
+    case 'カップ': return num*200;
+    case 'g':  return num;
+    case 'kg': return num*1000;
+    case 'ml': return num;
+    case 'L':  return num*1000;
+    case '個':
+      if (name.includes('卵'))      return num*60;
+      if (name.includes('玉ねぎ'))  return num*200;
+      if (name.includes('じゃがいも')) return num*150;
+      if (name.includes('にんじん')) return num*150;
+      if (name.includes('トマト'))  return num*150;
+      return num*100;
+    case '枚': return name.includes('キャベツ') ? num*50 : num*30;
+    case '本':
+      if (name.includes('ねぎ')) return num*100;
+      if (name.includes('にんじん')) return num*150;
+      return num*100;
+    case 'かけ': case '片': return name.includes('しょうが') ? num*10 : num*5;
+    default: return null;
+  }
+}
+
+// ══════════════════════════════════════════
+// NUTRITION CALCULATION
+// ══════════════════════════════════════════
+
+function getNutrKey(name) {
+  if (nutritionDB[name]) return name;
+  for (const k of Object.keys(nutritionDB)) {
+    if (name.includes(k)) return k;
+  }
+  return null;
+}
+
+function calcNutrition(grams, name) {
+  if (grams === null) return null;
+  const key = getNutrKey(name);
+  if (!key) return null;
+  const d = nutritionDB[key];
+  return {
+    kcal: d.kcal*grams/100,
+    p:    d.p*grams/100,
+    f:    d.f*grams/100,
+    c:    d.c*grams/100,
+    s:    (d.s||0)*grams/100,  // sodium mg
+  };
+}
+
+// ══════════════════════════════════════════
+// SCALE INGREDIENT
+// ══════════════════════════════════════════
+
+function scaleIngredient(parsed, ratio) {
+  const { name, numStr, unit, suffix, isAmbiguous, ambiguousNote, isMountain } = parsed;
+  if (isAmbiguous) return { display:unit, note:ambiguousNote, grams:null };
+  if (isMountain) {
+    if (numStr) { const sc = parseFrac(numStr)*ratio; return { display:`山盛り ${fmtN(sc)}${unit!=='山盛り'?unit:''}`, note:'通常の約1.5倍', grams:null }; }
+    return { display:'山盛り', note:'通常の約1.5倍', grams:null };
+  }
+  if (numStr === null) return { display:unit||'—', note:null, grams:null };
+
+  const orig = parseFrac(numStr), scaled = orig * ratio;
+  let display = '', note = null;
+
+  if (unit === '大さじ') {
+    display = `大さじ ${fmtN(scaled)}`;
+    if (scaled < 1 && scaled > 0) note = `（小さじ${fmtN(scaled*3)}）`;
+  } else if (unit === '小さじ') {
+    display = `小さじ ${fmtN(scaled)}`;
+    if (scaled >= 3) note = `（大さじ${fmtN(scaled/3)}）`;
+  } else if (unit === 'カップ') {
+    display = `カップ ${fmtN(scaled)}`;
+  } else if (unit) {
+    display = `${fmtN(scaled)}${unit}`;
+  } else {
+    display = fmtN(scaled);
+  }
+  if (suffix) display += ` ${suffix}`;
+
+  return { display, note, grams: unitToGrams(scaled, unit, name) };
+}
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+
+let _nutrTotal = null;   // { kcal, p, f, c } total
+let _nutrPer   = null;   // per person
+let _nutrView  = 'total';
+
+// ══════════════════════════════════════════
+// MAIN CONVERT
+// ══════════════════════════════════════════
+
+function convert() {
+  const raw  = document.getElementById('ingredientInput').value.trim();
+  const from = parseFloat(document.getElementById('fromPerson').value) || 1;
+  const to   = parseFloat(document.getElementById('toPerson').value)   || 1;
+  const ratio = to / from;
+  if (!raw) return;
+
+  const results = [];
+  let totalKcal=0, totalP=0, totalF=0, totalC=0, totalSodium=0;
+  let hasNutr=false, hasSodium=false;
+
+  for (const line of raw.split('\n')) {
+    const parsed = parseLine(line);
+    if (!parsed) continue;
+    const scaled = scaleIngredient(parsed, ratio);
+    const nutr   = calcNutrition(scaled.grams, parsed.name);
+    const allergens = getIngredientAllergens(parsed.name);
+    if (nutr) {
+      totalKcal+=nutr.kcal; totalP+=nutr.p; totalF+=nutr.f; totalC+=nutr.c;
+      totalSodium+=nutr.s; hasNutr=true;
+      if (nutr.s > 0) hasSodium = true;
+    }
+    results.push({ name:parsed.name, display:scaled.display, note:scaled.note, ambiguousNote:parsed.ambiguousNote, nutr, allergens, grams:scaled.grams });
+  }
+
+  _nutrTotal = hasNutr ? { kcal:totalKcal, p:totalP, f:totalF, c:totalC } : null;
+  _nutrPer   = hasNutr ? { kcal:totalKcal/to, p:totalP/to, f:totalF/to, c:totalC/to } : null;
+  const sodiumData = hasSodium ? { total: totalSodium, per: totalSodium/to } : null;
+  _nutrView  = 'total';
+
+  renderResult(results, ratio, from, to, sodiumData);
+  saveStorage();
+}
+
+// ══════════════════════════════════════════
+// RENDER RESULT
+// ══════════════════════════════════════════
+
+function getSubstitute(name) {
+  if (substitutes[name]) return substitutes[name];
+  for (const k of Object.keys(substitutes)) {
+    if (name.includes(k)||k.includes(name)) return substitutes[k];
+  }
+  return null;
+}
+
+function renderResult(results, ratio, from, to, sodiumData) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('saveBtn').style.display   = 'inline-flex';
+  document.getElementById('qrBtn').style.display    = 'inline-flex';
+  document.getElementById('printBtn').style.display = 'inline-flex';
+
+  document.getElementById('scaleBadge').textContent = `${from}人前 → ${to}人前  ×${fmtN(ratio)}`;
+
+  const tbody = document.getElementById('resultBody');
+  tbody.innerHTML = '';
+
+  let totalKcal = 0, hasKcal = false;
+
+  results.forEach((ing, idx) => {
+    if (ing.nutr) { totalKcal += ing.nutr.kcal; hasKcal = true; }
+    const subs  = getSubstitute(ing.name);
+    const subId = `sub-${idx}`;
+
+    const allergenMinis = ing.allergens && ing.allergens.length
+      ? `<div class="ing-allergens">${ing.allergens.map(a=>`<span class="a-mini">${escHtml(a.label)}</span>`).join('')}</div>`
+      : '';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="ing-name">${escHtml(ing.name)}</div>${allergenMinis}</td>
+      <td>
+        <div class="ing-amount">${escHtml(ing.display)}</div>
+        ${ing.note ? `<div class="ing-note">${escHtml(ing.note)}</div>` : ''}
+        ${ing.ambiguousNote ? `<div class="ing-ambiguous">${escHtml(ing.ambiguousNote)}</div>` : ''}
+      </td>
+      <td class="ing-calorie">
+        ${ing.nutr !== null
+          ? `${Math.round(ing.nutr.kcal)}<span style="font-size:10px;color:var(--text3)"> kcal</span>`
+          : `<span style="color:var(--text3)">—</span>`}
+      </td>
+      <td>
+        ${subs
+          ? `<button class="btn btn-ghost" id="btn-${subId}" onclick="toggleSub('${subId}')">代替</button>
+             <div class="sub-panel" id="${subId}">
+               <div class="sub-title">代替食材</div>
+               <ul class="sub-list">${subs.map(s=>`<li>${escHtml(s)}</li>`).join('')}</ul>
+             </div>`
+          : `<span style="color:var(--text3);font-size:12px">—</span>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Store for diet highlight & show diet bar
+  _lastResults = results;
+  document.getElementById('dietBar').style.display = 'flex';
+  applyDietHighlight();
+
+  const totalRow = document.getElementById('totalRow');
+  if (hasKcal) {
+    totalRow.style.display = 'flex';
+    document.getElementById('totalCalorie').textContent = `${Math.round(totalKcal)} kcal`;
+    document.getElementById('totalPer').textContent = `（${to}人前合計）`;
+  } else {
+    totalRow.style.display = 'none';
+  }
+
+  // Allergen + Sodium section
+  renderAllergenSection(results, sodiumData, to);
+
+  // Cost section
+  initCostSection(results, to);
+
+  // Nutrition section
+  if (_nutrTotal) {
+    document.getElementById('nutrSection').style.display = 'block';
+    document.getElementById('toggleTotal').classList.add('active');
+    document.getElementById('togglePer').classList.remove('active');
+    renderNutrition(_nutrTotal, to, 'total');
+  } else {
+    document.getElementById('nutrSection').style.display = 'none';
+  }
+}
+
+function renderAllergenSection(results, sodiumData, toPerson) {
+  const section = document.getElementById('allergenSection');
+  const allNames = results.map(r => r.name);
+  const found = detectAllAllergens(allNames);
+
+  // Always show the section
+  section.style.display = 'flex';
+
+  // Pills
+  const pillsEl = document.getElementById('allergenPills');
+  if (found.size === 0) {
+    pillsEl.innerHTML = '<span class="a-none">検出されませんでした</span>';
+  } else {
+    pillsEl.innerHTML = [...found.entries()]
+      .sort((a,b) => (b[1]?1:0) - (a[1]?1:0)) // mandatory first
+      .map(([label, mandatory]) =>
+        `<span class="a-pill ${mandatory ? 'a-pill-mandatory' : 'a-pill-advisory'}">${escHtml(label)}</span>`
+      ).join('');
+  }
+
+  // Sodium bar
+  const sodiumWrap = document.getElementById('sodiumWrap');
+  if (!sodiumData) { sodiumWrap.style.display = 'none'; return; }
+  sodiumWrap.style.display = 'flex';
+
+  const totalG = sodiumData.total / 1000; // mg → g
+  const perG   = sodiumData.per   / 1000;
+  document.getElementById('sodiumTotal').textContent = `${totalG.toFixed(2)}g`;
+  document.getElementById('sodiumPer').textContent   = `（1人前 ${perG.toFixed(2)}g）`;
+
+  // WHO目標: 5g/日, 日本目標: 男7.5g 女6.5g/日 → 1食分=1/3として警告
+  const DAILY_TARGET = 6.5; // g/日（成人女性基準・厳し目）
+  const pct = Math.min((totalG / DAILY_TARGET) * 100, 100);
+  const color = totalG <= 2 ? '#6bffb8' : totalG <= 4 ? '#ffb347' : '#ff7b7b';
+  document.getElementById('sodiumFill').style.cssText = `width:${pct}%;background:${color}`;
+  document.getElementById('sodiumLimit').textContent =
+    `日本食塩摂取目標（${toPerson}人前全体）：${totalG.toFixed(2)}g / 目安6.5g/日`;
+}
+
+function toggleSub(id) {
+  const panel = document.getElementById(id);
+  const btn   = document.getElementById(`btn-${id}`);
+  const open  = panel.classList.toggle('open');
+  btn.textContent = open ? '閉じる' : '代替';
+  btn.classList.toggle('btn-alt', open);
+  btn.classList.toggle('btn-ghost', !open);
+}
+
+// ══════════════════════════════════════════
+// NUTRITION CHART
+// ══════════════════════════════════════════
+
+function setNutrView(mode) {
+  _nutrView = mode;
+  document.getElementById('toggleTotal').classList.toggle('active', mode==='total');
+  document.getElementById('togglePer').classList.toggle('active',   mode==='per');
+  const toPerson = parseFloat(document.getElementById('toPerson').value) || 1;
+  const data = mode === 'total' ? _nutrTotal : _nutrPer;
+  if (data) renderNutrition(data, toPerson, mode);
+}
+
+function renderNutrition(data, toPerson, mode) {
+  const { kcal, p, f, c } = data;
+  const totalMacro = p + f + c;
+
+  // Draw donut
+  const canvas = document.getElementById('nutritionChart');
+  drawDonut(canvas, p, f, c);
+
+  // Legend
+  const legend = document.getElementById('nutrLegend');
+  const macros = [
+    { label:'タンパク質', val:p, color:'var(--p-color)', kcalPer:4 },
+    { label:'脂質',       val:f, color:'var(--f-color)', kcalPer:9 },
+    { label:'炭水化物',   val:c, color:'var(--c-color)', kcalPer:4 },
+  ];
+
+  legend.innerHTML = macros.map(m => {
+    const pct = totalMacro > 0 ? Math.round(m.val / totalMacro * 100) : 0;
+    return `
+    <div class="nutr-item">
+      <div class="nutr-item-header">
+        <span class="nutr-dot-label">
+          <span class="nutr-dot" style="background:${m.color}"></span>
+          ${escHtml(m.label)}
+        </span>
+        <span>
+          <span class="nutr-val" style="color:${m.color}">${m.val.toFixed(1)}g</span>
+          <span class="nutr-pct">${pct}%</span>
+        </span>
+      </div>
+      <div class="nutr-bar-track">
+        <div class="nutr-bar-fill" style="width:${pct}%;background:${m.color}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const label = mode === 'total' ? `${toPerson}人前合計` : `1人前あたり`;
+  document.getElementById('nutrKcalNote').textContent =
+    `${label}：エネルギー ${Math.round(kcal)} kcal｜タンパク質 ${p.toFixed(1)}g｜脂質 ${f.toFixed(1)}g｜炭水化物 ${c.toFixed(1)}g`;
+}
+
+function drawDonut(canvas, p, f, c) {
+  const size = 320; // logical 160px × 2 for retina
+  canvas.width  = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2); // retina scale; draw at 160×160
+
+  const cx = 80, cy = 80;
+  const outerR = 68, innerR = 44;
+  const total = p + f + c;
+
+  if (total <= 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, 0, Math.PI*2);
+    ctx.arc(cx, cy, innerR, 0, Math.PI*2, true);
+    ctx.fillStyle = '#2e2e2e';
+    ctx.fill();
+    return;
+  }
+
+  const segments = [
+    { val:p, color:'#6bffb8' },
+    { val:f, color:'#ff7b7b' },
+    { val:c, color:'#e8ff3c' },
+  ];
+  const GAP = 0.03;
+  let angle = -Math.PI / 2;
+
+  for (const seg of segments) {
+    if (seg.val <= 0) continue;
+    const sweep = (seg.val / total) * (Math.PI*2 - GAP * segments.length);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, angle + GAP/2, angle + sweep + GAP/2);
+    // Inner arc (reversed for donut shape)
+    ctx.arc(cx, cy, innerR, angle + sweep + GAP/2, angle + GAP/2, true);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    angle += sweep + GAP;
+  }
+
+  // Center text
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#f0f0f0';
+  ctx.font = 'bold 14px "DM Mono", monospace';
+  ctx.fillText(`${(p+f+c).toFixed(0)}g`, cx, cy - 7);
+  ctx.font = '10px "Zen Kaku Gothic New", sans-serif';
+  ctx.fillStyle = '#666';
+  ctx.fillText('PFC合計', cx, cy + 9);
+}
+
+// ══════════════════════════════════════════
+// VOICE INPUT  (Web Speech API)
+// ══════════════════════════════════════════
+
+let _recog      = null;
+let _voiceOn    = false;
+
+function initVoice() {
+  const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = document.getElementById('micBtn');
+  if (!SR) { btn.classList.add('hidden'); return; }
+
+  _recog = new SR();
+  _recog.lang            = 'ja-JP';
+  _recog.continuous      = true;
+  _recog.interimResults  = true;
+  _recog.maxAlternatives = 1;
+
+  _recog.onresult = e => {
+    const status = document.getElementById('voiceStatus');
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) {
+        const lines = parseVoiceText(t);
+        if (lines.length) {
+          const ta  = document.getElementById('ingredientInput');
+          const cur = ta.value.trim();
+          ta.value  = cur ? cur + '\n' + lines.join('\n') : lines.join('\n');
+          saveStorage();
+        }
+        interim = '';
+      } else { interim = t; }
+    }
+    if (interim) {
+      status.textContent = '🎤 ' + interim;
+      status.classList.add('active');
+    } else {
+      status.textContent = '聞いています… 例：「鶏もも肉 三百グラム」「砂糖 大さじ二」';
+    }
+  };
+
+  _recog.onerror = e => {
+    if (e.error === 'no-speech') return;
+    document.getElementById('voiceStatus').textContent = 'エラー: ' + e.error;
+    _stopVoice();
+  };
+
+  // Auto-restart (continuous mode can stop unexpectedly)
+  _recog.onend = () => { if (_voiceOn) { try { _recog.start(); } catch(_) {} } };
+}
+
+function toggleVoice() {
+  if (!_recog) return;
+  if (_voiceOn) { _voiceOn = false; _recog.stop(); _stopVoice(); }
+  else { _voiceOn = true; _recog.start(); _startVoice(); }
+}
+
+function _startVoice() {
+  const btn = document.getElementById('micBtn');
+  const st  = document.getElementById('voiceStatus');
+  btn.classList.add('listening');
+  btn.title = 'クリックして停止';
+  st.textContent = '聞いています… 例：「鶏もも肉 三百グラム」「砂糖 大さじ二」';
+  st.classList.add('active');
+}
+function _stopVoice() {
+  _voiceOn = false;
+  const btn = document.getElementById('micBtn');
+  const st  = document.getElementById('voiceStatus');
+  btn.classList.remove('listening');
+  btn.title = '音声入力（クリックして開始）';
+  st.textContent = '';
+  st.classList.remove('active');
+}
+
+// ── 音声テキスト → 材料行 ──────────────────
+
+function parseVoiceText(text) {
+  // 「と」「、」「，」で複数材料を区切る
+  return text.split(/[とと、，,]+/).map(normalizeVoiceLine).filter(Boolean);
+}
+
+function normalizeVoiceLine(text) {
+  text = text.trim();
+  if (!text) return null;
+
+  // 単位の読み仮名 → 表記
+  const unitMap = [
+    [/キログラム|きろぐらむ|キロ/g, 'kg'],
+    [/ミリリットル|みりりっとる/g, 'ml'],
+    [/ミリ|みり/g, 'ml'],
+    [/リットル|りっとる/g, 'L'],
+    [/グラム|ぐらむ/g, 'g'],
+    [/おおさじ|大匙/g, '大さじ'],
+    [/こさじ|小匙/g, '小さじ'],
+    [/かっぷ/g, 'カップ'],
+    [/こ$|個$/g, '個'],
+    [/ほん$|本$/g, '本'],
+    [/まい$|枚$/g, '枚'],
+  ];
+  for (const [re, rep] of unitMap) text = text.replace(re, rep);
+
+  // 「半分」「半」→ 1/2
+  text = text.replace(/半分|はんぶん/g, '1/2');
+  text = text.replace(/(大さじ|小さじ|カップ)\s*半(?!\d)/g, '$1 1/2');
+
+  // 漢数字 → アラビア数字
+  text = text.replace(/[〇零一二三四五六七八九十百千]+/g, m => {
+    const n = jpNumToArabic(m);
+    return n !== null ? String(n) : m;
+  });
+
+  return text;
+}
+
+function jpNumToArabic(s) {
+  if (/^\d+$/.test(s)) return parseInt(s, 10);
+  const d = { '〇':0,'零':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9 };
+  let result = 0, cur = 0;
+  for (const ch of s) {
+    if (d[ch] !== undefined)  { cur = d[ch]; }
+    else if (ch === '十') { result += (cur || 1) * 10;   cur = 0; }
+    else if (ch === '百') { result += (cur || 1) * 100;  cur = 0; }
+    else if (ch === '千') { result += (cur || 1) * 1000; cur = 0; }
+  }
+  result += cur;
+  return result || null;
+}
+
+// ══════════════════════════════════════════
+// CLEAR
+// ══════════════════════════════════════════
+
+function clearAll() {
+  document.getElementById('ingredientInput').value = '';
+  document.getElementById('fromPerson').value = '2';
+  document.getElementById('toPerson').value   = '4';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('saveBtn').style.display = 'none';
+  _nutrTotal = null; _nutrPer = null;
+  _lastResults = [];
+  _bakerData = [];
+  _costResults = [];
+  document.getElementById('dietBar').style.display = 'none';
+  document.getElementById('bakerCard').style.display = 'none';
+  document.getElementById('bakerFlourG').value = '';
+  document.getElementById('costSection').style.display = 'none';
+  ['sc_input','sc_from','sc_to'].forEach(k => localStorage.removeItem(k));
+}
+
+// ══════════════════════════════════════════
+// INDEXEDDB
+// ══════════════════════════════════════════
+
+const DB_NAME  = 'ScalerDB';
+const DB_VER   = 1;
+const DB_STORE = 'recipes';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(DB_STORE)) {
+        db.createObjectStore(DB_STORE, { keyPath:'id', autoIncrement:true });
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function dbSaveRecipe(name) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(DB_STORE, 'readwrite');
+    const req = tx.objectStore(DB_STORE).add({
+      name,
+      ingredients: document.getElementById('ingredientInput').value,
+      fromPerson:  document.getElementById('fromPerson').value,
+      toPerson:    document.getElementById('toPerson').value,
+      savedAt:     new Date().toISOString(),
+    });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+async function dbGetAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+async function dbDelete(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+// ══════════════════════════════════════════
+// SAVED RECIPES UI
+// ══════════════════════════════════════════
+
+let _savedOpen = false;
+
+function toggleSavedPanel() {
+  _savedOpen = !_savedOpen;
+  const body    = document.getElementById('savedBody');
+  const chevron = document.getElementById('savedChevron');
+  if (_savedOpen) {
+    body.classList.remove('closed');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    chevron.classList.add('open');
+    renderRecipeList(); // refresh on open
+  } else {
+    body.style.maxHeight = '0';
+    body.classList.add('closed');
+    chevron.classList.remove('open');
+  }
+}
+
+async function renderRecipeList() {
+  const list  = document.getElementById('recipeList');
+  const count = document.getElementById('recipeCount');
+  let recipes = [];
+  try { recipes = await dbGetAll(); } catch(e) { /* IndexedDB unavailable */ }
+
+  count.textContent = recipes.length;
+  if (recipes.length === 0) {
+    list.innerHTML = '<div class="empty-recipes">保存されたレシピはありません</div>';
+    return;
+  }
+
+  // Sort newest first
+  recipes.sort((a,b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+  list.innerHTML = recipes.map(r => `
+    <div class="recipe-item">
+      <span class="recipe-item-name" title="${escHtml(r.name)}">${escHtml(r.name)}</span>
+      <span class="badge">${r.fromPerson}→${r.toPerson}人前</span>
+      <span class="recipe-item-meta">${fmtDate(r.savedAt)}</span>
+      <div class="recipe-item-actions">
+        <button class="btn btn-ghost" onclick="loadRecipe(${r.id})">読込</button>
+        <button class="btn btn-danger" onclick="deleteRecipe(${r.id})">削除</button>
+      </div>
+    </div>`).join('');
+}
+
+async function loadRecipe(id) {
+  const db = await openDB();
+  const recipe = await new Promise((resolve, reject) => {
+    const req = db.transaction(DB_STORE,'readonly').objectStore(DB_STORE).get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+  if (!recipe) return;
+  document.getElementById('ingredientInput').value = recipe.ingredients;
+  document.getElementById('fromPerson').value = recipe.fromPerson;
+  document.getElementById('toPerson').value   = recipe.toPerson;
+  convert();
+  window.scrollTo({ top: 0, behavior:'smooth' });
+}
+
+async function deleteRecipe(id) {
+  await dbDelete(id);
+  await renderRecipeList();
+  // Update max-height after content changes
+  if (_savedOpen) {
+    const body = document.getElementById('savedBody');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+
+// ══════════════════════════════════════════
+// SAVE MODAL
+// ══════════════════════════════════════════
+
+function openSaveModal() {
+  document.getElementById('recipeNameInput').value = '';
+  document.getElementById('saveModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('recipeNameInput').focus(), 50);
+}
+
+function closeSaveModal() {
+  document.getElementById('saveModal').classList.add('hidden');
+}
+
+function onModalOverlayClick(e) {
+  if (e.target === document.getElementById('saveModal')) closeSaveModal();
+}
+
+async function confirmSave() {
+  const name = document.getElementById('recipeNameInput').value.trim();
+  if (!name) { document.getElementById('recipeNameInput').focus(); return; }
+  await dbSaveRecipe(name);
+  closeSaveModal();
+  await renderRecipeList();
+  // Auto-open saved panel to show result
+  if (!_savedOpen) toggleSavedPanel();
+  else if (_savedOpen) {
+    const body = document.getElementById('savedBody');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+
+document.getElementById('recipeNameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmSave();
+  if (e.key === 'Escape') closeSaveModal();
+});
+
+// ══════════════════════════════════════════
+// QR CODE  (pure JS, no library)
+// ══════════════════════════════════════════
+// Minimal QR encoder: Version 1-10, ECC Level M, Byte mode (UTF-8)
+// Based on the open QR spec. Generates a pixel matrix then draws to Canvas.
+
+const QR = (() => {
+  // ── Reed-Solomon GF(256) ──────────────────
+  const GF = (() => {
+    const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+    let x = 1;
+    for (let i = 0; i < 255; i++) {
+      EXP[i] = x; LOG[x] = i;
+      x = x << 1; if (x & 0x100) x ^= 0x11d;
+    }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+    const mul = (a, b) => a && b ? EXP[LOG[a] + LOG[b]] : 0;
+    const poly = (n) => { // generator poly for n EC bytes
+      let p = [1];
+      for (let i = 0; i < n; i++) {
+        const q = [1, EXP[i]];
+        const r = new Uint8Array(p.length + 1);
+        for (let j = 0; j < p.length; j++)
+          for (let k = 0; k < q.length; k++)
+            r[j + k] ^= mul(p[j], q[k]);
+        p = Array.from(r);
+      }
+      return p;
+    };
+    const ec = (data, nec) => {
+      const gen = poly(nec);
+      const msg = [...data, ...new Array(nec).fill(0)];
+      for (let i = 0; i < data.length; i++) {
+        const c = msg[i];
+        if (!c) continue;
+        for (let j = 0; j < gen.length; j++) msg[i + j] ^= mul(c, gen[j]);
+      }
+      return msg.slice(data.length);
+    };
+    return { ec };
+  })();
+
+  // ── QR version/capacity table (Byte mode, ECC M) ──
+  // [version, capacity bytes, ec codewords, blocks, data codewords per block]
+  const VER = [
+    null,
+    [1,16,10,1,16],  [2,28,16,1,28],  [3,44,26,1,44],
+    [4,64,36,2,32],  [5,86,48,2,43],  [6,108,64,2,54],
+    [7,124,72,4,31], [8,154,88,4,38], [9,182,110,4,46],
+    [10,216,130,4,54]
+  ];
+
+  // ── Alignment pattern positions ──
+  const ALIGN = [null,[],[],[],[],[],[],[6,22],[6,24],[6,26],[6,28]];
+
+  // ── Format info (ECC M, mask pattern 2: (r+c)%3==0) ──
+  // Precomputed for all 8 masks, ECC M = 0b00
+  const FMT_ECCM = [
+    0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0
+  ];
+
+  function encode(text) {
+    const utf8 = unescape(encodeURIComponent(text));
+    const bytes = Array.from(utf8).map(c => c.charCodeAt(0));
+    const len   = bytes.length;
+
+    // Find smallest version that fits
+    let ver = 1;
+    while (ver <= 10 && VER[ver][1] < len) ver++;
+    if (ver > 10) return null; // too long
+
+    const [v, cap, ecTotal, blocks] = VER[ver];
+    const totalCW  = cap + ecTotal;
+    const ecPerBlk = Math.floor(ecTotal / blocks);
+    const dataCW   = cap;
+    const dataPerBlk = Math.floor(dataCW / blocks);
+
+    // ── Build data bits ──────────────────────
+    let bits = '';
+    const b = n => { bits += n; };
+    b('0100'); // Byte mode
+    b(len.toString(2).padStart(ver < 10 ? 8 : 16, '0'));
+    for (const byte of bytes) b(byte.toString(2).padStart(8,'0'));
+    // Terminator
+    const maxBits = dataCW * 8;
+    const term = Math.min(4, maxBits - bits.length);
+    bits += '0'.repeat(term);
+    // Byte-align
+    while (bits.length % 8) bits += '0';
+    // Pad bytes
+    let pi = 0;
+    while (bits.length < maxBits) { bits += ['11101100','00010001'][pi++ % 2]; }
+
+    // ── Data codewords → blocks → EC ────────
+    const data = [];
+    for (let i = 0; i < bits.length; i += 8)
+      data.push(parseInt(bits.slice(i, i+8), 2));
+
+    const blkData = [], blkEC = [];
+    let pos = 0;
+    for (let bl = 0; bl < blocks; bl++) {
+      const sz = dataPerBlk + (bl >= blocks - (dataCW % blocks || 0) ? 0 : 0);
+      const d  = data.slice(pos, pos + dataPerBlk); pos += dataPerBlk;
+      blkData.push(d);
+      blkEC.push(GF.ec(d, ecPerBlk));
+    }
+
+    // Interleave data
+    const final = [];
+    for (let i = 0; i < dataPerBlk; i++) for (const b of blkData) if (i < b.length) final.push(b[i]);
+    for (let i = 0; i < ecPerBlk;   i++) for (const b of blkEC)   final.push(b[i]);
+
+    // ── Build matrix ─────────────────────────
+    const size = ver * 4 + 17;
+    const M    = () => Array.from({length:size}, () => new Array(size).fill(null));
+    const mat  = M();
+    const func = M(); // functional modules (not masked)
+
+    const set = (r, c, v, f=true) => { mat[r][c] = v; if(f) func[r][c] = 1; };
+
+    // Finder patterns
+    const finder = (tr, tc) => {
+      for (let r = -1; r <= 7; r++) for (let c = -1; c <= 7; c++) {
+        const rr = tr+r, cc = tc+c;
+        if (rr<0||rr>=size||cc<0||cc>=size) continue;
+        const inPat = r>=0&&r<=6&&c>=0&&c<=6;
+        const onBorder = r===0||r===6||c===0||c===6;
+        const inInner = r>=2&&r<=4&&c>=2&&c<=4;
+        set(rr, cc, inPat ? (onBorder||inInner ? 1 : 0) : 0);
+      }
+    };
+    finder(0,0); finder(0,size-7); finder(size-7,0);
+
+    // Timing
+    for (let i = 8; i < size-8; i++) { set(6,i,(i%2===0)?1:0); set(i,6,(i%2===0)?1:0); }
+
+    // Dark module
+    set(size-8, 8, 1);
+
+    // Alignment patterns
+    const ap = ALIGN[ver];
+    if (ap.length) {
+      for (const r of ap) for (const c of ap) {
+        if (func[r][c]) continue;
+        for (let dr=-2;dr<=2;dr++) for (let dc=-2;dc<=2;dc++) {
+          const v = (dr===-2||dr===2||dc===-2||dc===2) ? 1 : (dr===0&&dc===0) ? 1 : 0;
+          set(r+dr, c+dc, v);
+        }
+      }
+    }
+
+    // Reserve format areas
+    for (let i=0;i<9;i++) { set(8,i,0); set(i,8,0); }
+    for (let i=size-8;i<size;i++) { set(8,i,0); set(i,8,0); }
+    set(8,8,0);
+
+    // ── Place data bits (mask 2: (r+c)%3==0) ─
+    const MASK = (r,c) => (r+c)%3===0;
+    let bi = 0;
+    const finalBits = final.flatMap(b => Array.from({length:8},(_,i)=>(b>>(7-i))&1));
+    // Zigzag column pairs, right to left
+    for (let col = size-1; col > 0; col -= 2) {
+      if (col === 6) col--; // skip timing
+      for (let row = 0; row < size; row++) {
+        const r = ((Math.floor((size-1-col)/2)) % 2 === 0) ? size-1-row : row;
+        for (let dc = 0; dc < 2; dc++) {
+          const c = col - dc;
+          if (func[r][c] !== null) continue;
+          const bit = bi < finalBits.length ? finalBits[bi++] : 0;
+          mat[r][c] = bit ^ (MASK(r,c) ? 1 : 0);
+          func[r][c] = 0;
+        }
+      }
+    }
+
+    // ── Format info (mask 2, ECC M) ──────────
+    const fmt = FMT_ECCM[2];
+    const fmtBits = Array.from({length:15},(_,i)=>(fmt>>(14-i))&1);
+    const fpos = [0,1,2,3,4,5,7,8,size-7,size-6,size-5,size-4,size-3,size-2,size-1];
+    for (let i=0;i<15;i++) {
+      mat[8][fpos[i]] = fmtBits[i];
+      mat[fpos[i]][8] = fmtBits[i];
+    }
+
+    return { mat, size };
+  }
+
+  function draw(canvas, text, opts = {}) {
+    const { scale = 5, margin = 4, dark = '#0f0f0f', light = '#ffffff' } = opts;
+    const qr = encode(text);
+    if (!qr) { console.warn('QR: text too long'); return false; }
+    const { mat, size } = qr;
+    const px = (size + margin * 2) * scale;
+    canvas.width  = px;
+    canvas.height = px;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = light; ctx.fillRect(0,0,px,px);
+    ctx.fillStyle = dark;
+    for (let r = 0; r < size; r++)
+      for (let c = 0; c < size; c++)
+        if (mat[r][c]) ctx.fillRect((c+margin)*scale, (r+margin)*scale, scale, scale);
+    return true;
+  }
+
+  return { draw };
+})();
+
+// ── QR UI ─────────────────────────────────
+
+function openQrModal() {
+  const ing  = document.getElementById('ingredientInput').value.trim();
+  const from = document.getElementById('fromPerson').value;
+  const to   = document.getElementById('toPerson').value;
+  if (!ing) return;
+
+  // Encode recipe as URL fragment (no server needed)
+  const payload = JSON.stringify({ ing, from, to });
+  const encoded = btoa(unescape(encodeURIComponent(payload)));
+  const url     = `${location.origin}${location.pathname}#r=${encoded}`;
+
+  const canvas = document.getElementById('qrCanvas');
+  const ok = QR.draw(canvas, url, { scale:5, margin:4, dark:'#111', light:'#fff' });
+
+  document.getElementById('qrUrl').textContent = url.length > 80 ? url.slice(0,77)+'…' : url;
+  document.getElementById('qrModal').classList.remove('hidden');
+
+  if (!ok) {
+    document.getElementById('qrUrl').textContent = '材料が多すぎてQRに収まりません。材料を減らしてください。';
+  }
+}
+
+function closeQrModal() { document.getElementById('qrModal').classList.add('hidden'); }
+function onQrOverlayClick(e) { if (e.target === document.getElementById('qrModal')) closeQrModal(); }
+
+function downloadQr() {
+  const canvas = document.getElementById('qrCanvas');
+  const a = document.createElement('a');
+  a.download = 'recipe-qr.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// ── Load from URL fragment ─────────────────
+function loadFromHash() {
+  try {
+    const m = location.hash.match(/[#&]r=([^&]+)/);
+    if (!m) return;
+    const data = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    if (data.ing) document.getElementById('ingredientInput').value = data.ing;
+    if (data.from) document.getElementById('fromPerson').value = data.from;
+    if (data.to)   document.getElementById('toPerson').value   = data.to;
+    history.replaceState(null,'', location.pathname);
+    convert();
+  } catch(_) {}
+}
+
+// ══════════════════════════════════════════
+// LOCALSTORAGE (auto-save input)
+// ══════════════════════════════════════════
+
+function saveStorage() {
+  localStorage.setItem('sc_input', document.getElementById('ingredientInput').value);
+  localStorage.setItem('sc_from',  document.getElementById('fromPerson').value);
+  localStorage.setItem('sc_to',    document.getElementById('toPerson').value);
+}
+
+function loadStorage() {
+  const inp  = localStorage.getItem('sc_input');
+  const from = localStorage.getItem('sc_from');
+  const to   = localStorage.getItem('sc_to');
+  if (from) document.getElementById('fromPerson').value = from;
+  if (to)   document.getElementById('toPerson').value   = to;
+  if (inp)  { document.getElementById('ingredientInput').value = inp; convert(); }
+}
+
+['ingredientInput','fromPerson','toPerson'].forEach(id => {
+  document.getElementById(id).addEventListener('input', saveStorage);
+});
+['fromPerson','toPerson'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key==='Enter') convert(); });
+});
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+
+renderRecipeList();
+loadFromHash();
+if (!location.hash) loadStorage();
+initVoice();
+
+// ══════════════════════════════════════════
+// BACKUP / RESTORE
+// ══════════════════════════════════════════
+
+async function exportRecipes(e) {
+  e.stopPropagation(); // prevent panel toggle
+  let recipes = [];
+  try { recipes = await dbGetAll(); } catch(_) {}
+  if (recipes.length === 0) { alert('保存済みレシピがありません。'); return; }
+
+  const data = { version: 1, exportedAt: new Date().toISOString(), recipes };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `scaler-recipes-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importRecipes(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = ''; // reset input
+
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch(_) {
+    alert('JSONの読み込みに失敗しました。ファイルを確認してください。'); return;
+  }
+
+  const recipes = data.recipes || (Array.isArray(data) ? data : null);
+  if (!recipes || !Array.isArray(recipes)) {
+    alert('形式が正しくありません。'); return;
+  }
+
+  const db  = await openDB();
+  let count = 0;
+  for (const r of recipes) {
+    if (!r.name || !r.ingredients) continue;
+    await new Promise((resolve, reject) => {
+      // Strip existing id so autoIncrement assigns a new one
+      const { id: _omit, ...record } = r;
+      const req = db.transaction(DB_STORE,'readwrite').objectStore(DB_STORE).add(record);
+      req.onsuccess = resolve; req.onerror = resolve; // ignore duplicates
+    });
+    count++;
+  }
+
+  await renderRecipeList();
+  if (_savedOpen) {
+    const body = document.getElementById('savedBody');
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+  alert(`${count} 件のレシピを読み込みました。`);
+}
+
+// ══════════════════════════════════════════
+// DIET PROFILES
+// ══════════════════════════════════════════
+
+// Keywords that VIOLATE each profile (partial match)
+const dietViolations = {
+  gf: ['小麦','薄力粉','強力粉','中力粉','小麦粉','パスタ','うどん','そうめん','ひやむぎ','スパゲティ','ラーメン','中華麺','パン粉','天ぷら粉','お好み焼き粉','ホットケーキ粉','餃子の皮','ワンタンの皮','醤油','みりん','味噌','麦茶','麦'],
+  vegan: ['鶏','豚','牛','羊','ラム','鴨','豚バラ','鶏もも','鶏むね','ひき肉','挽き肉','合挽き','レバー','ベーコン','ソーセージ','ハム','サーモン','マグロ','タラ','鮭','エビ','イカ','タコ','アサリ','シジミ','ホタテ','カツオ','魚','卵','たまご','牛乳','ミルク','バター','生クリーム','チーズ','ヨーグルト','はちみつ','蜂蜜','ゼラチン','ラード','ベーコン','アンチョビ','明太子','かつお節','煮干し','だし'],
+  lowc: ['砂糖','上白糖','グラニュー糖','ざらめ','はちみつ','蜂蜜','みりん','米','ご飯','パスタ','うどん','そば','パン','小麦粉','片栗粉','コーンスターチ','じゃがいも','さつまいも','かぼちゃ','とうもろこし','バナナ','ぶどう','砂糖菓子','ケチャップ','ソース','みりん風'],
+  lowsalt: ['塩','醤油','味噌','みそ','ソース','ケチャップ','マヨネーズ','ポン酢','めんつゆ','だしの素','コンソメ','ブイヨン','オイスターソース','豆板醤','コチュジャン','ナンプラー','アンチョビ','梅干し','塩昆布','ちくわ','かまぼこ','ハム','ベーコン','ソーセージ'],
+};
+
+// Keywords that are SAFE / compliant
+const dietSafe = {
+  gf: ['米','米粉','片栗粉','コーンスターチ','じゃがいも','さつまいも','そば粉','タピオカ'],
+  vegan: ['豆腐','納豆','厚揚げ','油揚げ','高野豆腐','きぬ豆腐','豆乳','大豆','枝豆','えだまめ','テンペ'],
+  lowc: ['きのこ','ブロッコリー','ほうれん草','小松菜','キャベツ','レタス','トマト','きゅうり','ナス','ピーマン','鶏むね','ささみ','豆腐','納豆'],
+  lowsalt: ['レモン','ゆず','ライム','酢','にんにく','しょうが','ごま','ハーブ','スパイス','こしょう','唐辛子','わさび'],
+};
+
+let _activeDiets = new Set();
+let _lastResults = [];
+
+function toggleDiet(key) {
+  if (_activeDiets.has(key)) {
+    _activeDiets.delete(key);
+  } else {
+    _activeDiets.add(key);
+  }
+  document.getElementById(`chip-${key}`).classList.toggle('active', _activeDiets.has(key));
+  applyDietHighlight();
+}
+
+function checkIngDiet(name, key) {
+  const violations = dietViolations[key] || [];
+  for (const kw of violations) {
+    if (name.includes(kw) || kw.includes(name.length > 1 ? name : '\x00')) return 'ng';
+  }
+  return null;
+}
+
+function applyDietHighlight() {
+  const tbody = document.getElementById('resultBody');
+  if (!tbody || !_lastResults.length) return;
+
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach((tr, idx) => {
+    const ing = _lastResults[idx];
+    if (!ing) return;
+
+    // Remove old flags
+    tr.querySelectorAll('.diet-flag').forEach(el => el.remove());
+    tr.classList.remove('diet-ng');
+
+    if (_activeDiets.size === 0) return;
+
+    const nameCell = tr.querySelector('.ing-name');
+    if (!nameCell) return;
+
+    let anyNg = false;
+    for (const key of _activeDiets) {
+      const violations = dietViolations[key] || [];
+      let matched = false;
+      for (const kw of violations) {
+        if (ing.name.includes(kw) || (kw.length > 1 && kw.includes(ing.name))) {
+          matched = true; break;
+        }
+      }
+      if (matched) {
+        const label = { gf:'GF-NG', vegan:'VG-NG', lowc:'糖-NG', lowsalt:'塩-NG' }[key];
+        const flag = document.createElement('span');
+        flag.className = 'diet-flag diet-flag-ng';
+        flag.textContent = label;
+        nameCell.appendChild(flag);
+        anyNg = true;
+      }
+    }
+    if (anyNg) tr.classList.add('diet-ng');
+  });
+}
+
+// ══════════════════════════════════════════
+// BAKER'S PERCENTAGE
+// ══════════════════════════════════════════
+
+// Flour/starch keywords that count as the "base" (100%)
+const flourKeywords = ['小麦粉','薄力粉','強力粉','中力粉','全粒粉','ライ麦粉','米粉','そば粉','コーンミール','アーモンドプードル','片栗粉','コーンスターチ','タピオカ粉'];
+
+let _appMode = 'normal';  // 'normal' | 'baker'
+let _bakerData = [];      // { name, grams, pct, isBase }
+
+function setMode(mode) {
+  _appMode = mode;
+  document.getElementById('modeNormal').classList.toggle('active', mode === 'normal');
+  document.getElementById('modeBaker').classList.toggle('active', mode === 'baker');
+
+  // Update placeholder
+  const ta = document.getElementById('ingredientInput');
+  if (mode === 'baker') {
+    ta.placeholder = '強力粉 300g\n砂糖 18g\n塩 6g\nドライイースト 3g\nバター 30g\n水 210ml';
+  } else {
+    ta.placeholder = '砂糖 大さじ2\n醤油 大さじ3\nみりん 大さじ2\n鶏もも肉 300g\n玉ねぎ 1個\n卵 2個\n牛乳 カップ1/2\n塩 少々\nバター 10g';
+  }
+
+  // Toggle visible cards
+  const normalControls = document.getElementById('normalModeControls');
+  const bakerCard = document.getElementById('bakerCard');
+  const resultCard = document.getElementById('resultCard');
+
+  if (mode === 'baker') {
+    if (normalControls) normalControls.style.display = 'none';
+    // Re-run if we already have input
+    if (document.getElementById('ingredientInput').value.trim()) runBaker();
+  } else {
+    if (normalControls) normalControls.style.display = '';
+    bakerCard.style.display = 'none';
+  }
+}
+
+function isFlour(name) {
+  return flourKeywords.some(k => name.includes(k) || k.includes(name));
+}
+
+function runBaker() {
+  const raw = document.getElementById('ingredientInput').value.trim();
+  if (!raw) return;
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const items = [];
+
+  for (const line of lines) {
+    const parsed = parseLine(line);
+    if (!parsed || !parsed.numStr) continue;
+    const num = parseFloat(parsed.numStr);
+    if (isNaN(num)) continue;
+    const grams = unitToGrams(num, parsed.unit, parsed.name);
+    if (grams === null || grams <= 0) continue;
+    items.push({ name: parsed.name, grams, isBase: isFlour(parsed.name) });
+  }
+
+  if (items.length < 2) {
+    document.getElementById('bakerCard').style.display = 'none';
+    return;
+  }
+
+  // Sum base
+  const baseGrams = items.filter(x => x.isBase).reduce((s, x) => s + x.grams, 0);
+  if (baseGrams <= 0) {
+    document.getElementById('bakerBadge').textContent = '粉類が見つかりません';
+    document.getElementById('bakerCard').style.display = 'block';
+    document.getElementById('bakerBody').innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px;">強力粉・薄力粉など粉類の材料が必要です</td></tr>`;
+    return;
+  }
+
+  _bakerData = items.map(x => ({ ...x, pct: Math.round((x.grams / baseGrams) * 1000) / 10 }));
+
+  document.getElementById('bakerBadge').textContent = `粉 ${Math.round(baseGrams)}g = 100%`;
+  document.getElementById('bakerCard').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+
+  // Pre-fill flour input with detected base
+  const flourInput = document.getElementById('bakerFlourG');
+  if (!flourInput.value) flourInput.value = Math.round(baseGrams);
+
+  renderBakerTable();
+}
+
+function renderBakerTable() {
+  const tbody = document.getElementById('bakerBody');
+  const maxPct = Math.max(..._bakerData.map(x => x.pct));
+
+  tbody.innerHTML = _bakerData.map((item, i) => {
+    const barWidth = Math.min(100, (item.pct / maxPct) * 100);
+    return `<tr class="${item.isBase ? 'bp-base-row' : ''}">
+      <td><span style="font-weight:500">${escHtml(item.name)}</span>${item.isBase ? '<span class="diet-flag" style="background:rgba(255,179,71,0.15);color:#ffb347;border:1px solid rgba(255,179,71,0.3);margin-left:6px;">BASE</span>' : ''}</td>
+      <td><span class="bp-pct">${item.pct}%</span></td>
+      <td>
+        <div class="bp-bar-track">
+          <div class="bp-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${item.isBase ? '#ffb347' : 'var(--accent)'}"></div>
+        </div>
+      </td>
+      <td id="bp-calc-${i}" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--text2);">—</td>
+    </tr>`;
+  }).join('');
+
+  updateBakerTable();
+}
+
+function updateBakerTable() {
+  const flourG = parseFloat(document.getElementById('bakerFlourG').value);
+  const totalRow = document.getElementById('bakerTotalRow');
+
+  if (!flourG || flourG <= 0) {
+    _bakerData.forEach(item => {
+      const cell = document.getElementById(`bp-calc-${item.name}`);
+      if (cell) cell.textContent = '—';
+    });
+    totalRow.style.display = 'none';
+    return;
+  }
+
+  let total = 0;
+  _bakerData.forEach((item, i) => {
+    const g = Math.round((item.pct / 100) * flourG * 10) / 10;
+    total += g;
+    const cell = document.getElementById(`bp-calc-${i}`);
+    if (cell) cell.innerHTML = `${g}<span style="font-size:10px;color:var(--text3)"> g</span>`;
+  });
+
+  totalRow.style.display = 'flex';
+  document.getElementById('bakerTotalG').innerHTML = `${Math.round(total)}<span style="font-size:11px;color:var(--text3)"> g</span>`;
+}
+
+// ══════════════════════════════════════════
+// COST CALCULATION
+// ══════════════════════════════════════════
+
+// costPrices[name] = { price: number (円), qty: number (g/ml/個) }
+// loaded from localStorage
+let _costPrices = {};
+let _costResults = [];  // { name, grams } — filled on convert
+let _costOpen = false;
+
+(function loadCostPrices() {
+  try { _costPrices = JSON.parse(localStorage.getItem('costPrices_v1') || '{}'); } catch(_) {}
+})();
+
+function saveCostPrices() {
+  try { localStorage.setItem('costPrices_v1', JSON.stringify(_costPrices)); } catch(_) {}
+}
+
+function toggleCostBody() {
+  _costOpen = !_costOpen;
+  document.getElementById('costBody').style.display = _costOpen ? 'block' : 'none';
+  document.getElementById('costChevron').textContent = _costOpen ? '▲' : '▼';
+}
+
+function initCostSection(results, toPerson) {
+  _costResults = results.map(r => ({ name: r.name, grams: r.grams }));
+  const section = document.getElementById('costSection');
+  if (!_costResults.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  renderCostGrid(toPerson);
+}
+
+function renderCostGrid(toPerson) {
+  const grid = document.getElementById('costGrid');
+  grid.innerHTML = '';
+
+  _costResults.forEach((item, i) => {
+    const saved = _costPrices[item.name] || { price: '', qty: '' };
+    const row = document.createElement('div');
+    row.className = 'cost-row';
+
+    const nameCell = document.createElement('div');
+    nameCell.className = 'cost-ing-name';
+    nameCell.textContent = item.name;
+
+    const priceCell = document.createElement('div');
+    priceCell.innerHTML = `
+      <div class="cost-price-wrap">
+        <input type="number" min="0" step="1" placeholder="価格" value="${escHtml(String(saved.price))}"
+          id="cp-price-${i}" oninput="onCostInput(${i})" style="text-align:right;">
+        <span>円 /</span>
+        <input type="number" min="1" step="1" placeholder="量" value="${escHtml(String(saved.qty))}"
+          id="cp-qty-${i}" oninput="onCostInput(${i})" style="text-align:right;">
+        <span>${item.grams !== null ? 'g' : '個'}</span>
+      </div>`;
+
+    const calcCell = document.createElement('div');
+    calcCell.className = 'cost-calc';
+    calcCell.id = `cp-calc-${i}`;
+    calcCell.textContent = '—';
+
+    row.append(nameCell, priceCell, calcCell);
+    grid.appendChild(row);
+  });
+
+  recalcCost(toPerson);
+}
+
+function onCostInput(i) {
+  const item = _costResults[i];
+  const price = parseFloat(document.getElementById(`cp-price-${i}`).value) || 0;
+  const qty   = parseFloat(document.getElementById(`cp-qty-${i}`).value)   || 0;
+  if (price > 0 && qty > 0) {
+    _costPrices[item.name] = { price, qty };
+  } else {
+    delete _costPrices[item.name];
+  }
+  saveCostPrices();
+  recalcCost(_lastToPerson);
+}
+
+let _lastToPerson = 1;
+
+function recalcCost(toPerson) {
+  _lastToPerson = toPerson || 1;
+  let total = 0, hasAny = false;
+
+  _costResults.forEach((item, i) => {
+    const calcCell = document.getElementById(`cp-calc-${i}`);
+    if (!calcCell) return;
+    const saved = _costPrices[item.name];
+    if (!saved || !saved.price || !saved.qty || !item.grams) {
+      calcCell.textContent = '—';
+      return;
+    }
+    const cost = (item.grams / saved.qty) * saved.price;
+    calcCell.innerHTML = `${Math.round(cost)}<span style="font-size:10px;color:var(--text3)"> 円</span>`;
+    total += cost;
+    hasAny = true;
+  });
+
+  const totalRow = document.getElementById('costTotalRow');
+  if (hasAny) {
+    totalRow.style.display = 'flex';
+    document.getElementById('costTotalVal').innerHTML = `${Math.round(total)}<span style="font-size:12px;color:var(--text3)"> 円</span>`;
+    document.getElementById('costTotalPer').textContent = toPerson > 1 ? `（1人前 約${Math.round(total / toPerson)}円）` : '';
+  } else {
+    totalRow.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════
+
+const timers = [];   // { id, name, total, remaining, state:'idle'|'running'|'paused'|'done', intervalId }
+let _timerOpen = false;
+let _timerNotifGranted = false;
+
+function toggleTimerPanel() {
+  _timerOpen = !_timerOpen;
+  const body = document.getElementById('timerBody');
+  const chevron = document.getElementById('timerChevron');
+  if (_timerOpen) {
+    body.classList.remove('closed');
+    body.style.maxHeight = body.scrollHeight + 2000 + 'px';
+    chevron.textContent = '▲';
+    // Request notification permission on first open
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(p => { _timerNotifGranted = p === 'granted'; });
+    } else {
+      _timerNotifGranted = Notification.permission === 'granted';
+    }
+  } else {
+    body.classList.add('closed');
+    body.style.maxHeight = '0';
+    chevron.textContent = '▼';
+  }
+}
+
+function addTimer() {
+  const nameEl = document.getElementById('timerName');
+  const minEl  = document.getElementById('timerMin');
+  const secEl  = document.getElementById('timerSec');
+  const min = parseInt(minEl.value) || 0;
+  const sec = parseInt(secEl.value) || 0;
+  const total = min * 60 + sec;
+  if (total <= 0) { minEl.focus(); return; }
+
+  const id = Date.now();
+  const name = nameEl.value.trim() || `タイマー${timers.length + 1}`;
+  timers.push({ id, name, total, remaining: total, state: 'idle', intervalId: null });
+
+  nameEl.value = '';
+  minEl.value  = '';
+  secEl.value  = '';
+
+  renderTimers();
+  // Expand panel height after adding
+  const body = document.getElementById('timerBody');
+  body.style.maxHeight = body.scrollHeight + 500 + 'px';
+}
+
+function startTimer(id) {
+  const t = timers.find(x => x.id === id);
+  if (!t || t.state === 'running') return;
+  if (t.state === 'done') {
+    t.remaining = t.total;
+  }
+  t.state = 'running';
+  t.intervalId = setInterval(() => {
+    t.remaining--;
+    if (t.remaining <= 0) {
+      t.remaining = 0;
+      t.state = 'done';
+      clearInterval(t.intervalId);
+      t.intervalId = null;
+      onTimerDone(t);
+    }
+    updateTimerItem(t);
+  }, 1000);
+  updateTimerItem(t);
+}
+
+function pauseTimer(id) {
+  const t = timers.find(x => x.id === id);
+  if (!t || t.state !== 'running') return;
+  clearInterval(t.intervalId);
+  t.intervalId = null;
+  t.state = 'paused';
+  updateTimerItem(t);
+}
+
+function resetTimer(id) {
+  const t = timers.find(x => x.id === id);
+  if (!t) return;
+  clearInterval(t.intervalId);
+  t.intervalId = null;
+  t.remaining = t.total;
+  t.state = 'idle';
+  updateTimerItem(t);
+}
+
+function deleteTimer(id) {
+  const idx = timers.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  clearInterval(timers[idx].intervalId);
+  timers.splice(idx, 1);
+  renderTimers();
+}
+
+function onTimerDone(t) {
+  updateTimerItem(t);
+  // Web Notification
+  if (_timerNotifGranted) {
+    new Notification('タイマー完了', { body: `「${t.name}」が完了しました！`, icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="52" font-size="56">⏱</text></svg>' });
+  }
+  // Fallback: title flash
+  let blink = 0;
+  const origTitle = document.title;
+  const iv = setInterval(() => {
+    document.title = blink++ % 2 === 0 ? `⏱ ${t.name} 完了！` : origTitle;
+    if (blink > 10) { clearInterval(iv); document.title = origTitle; }
+  }, 600);
+}
+
+function fmtTimer(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function buildRingSVG(remaining, total, state) {
+  const r = 14, cx = 18, cy = 18;
+  const circumference = 2 * Math.PI * r;
+  const progress = total > 0 ? remaining / total : 1;
+  const dash = circumference * progress;
+  const color = state === 'done' ? '#ff7b7b' : state === 'running' ? '#e8ff3c' : '#444';
+  return `<svg class="timer-ring" viewBox="0 0 36 36">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="4"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="4"
+      stroke-dasharray="${dash.toFixed(2)} ${circumference.toFixed(2)}"
+      stroke-dashoffset="${(circumference * 0.25).toFixed(2)}"
+      stroke-linecap="round"
+      transform="rotate(-90 ${cx} ${cy})"/>
+  </svg>`;
+}
+
+function buildTimerItemHTML(t) {
+  const stateClass = t.state === 'running' ? 'running' : t.state === 'done' ? 'done' : 'idle';
+  const canStart  = t.state !== 'running';
+  const canPause  = t.state === 'running';
+  const startIcon = t.state === 'done' ? '↺' : '▶';
+  return `<div class="timer-item" id="ti-${t.id}">
+    ${buildRingSVG(t.remaining, t.total, t.state)}
+    <span class="timer-name" title="${t.name}">${t.name}</span>
+    <span class="timer-display ${stateClass}">${fmtTimer(t.remaining)}</span>
+    <div class="timer-btns">
+      ${canStart  ? `<button class="btn btn-ghost" style="padding:5px 10px;font-size:13px;" onclick="startTimer(${t.id})">${startIcon}</button>` : ''}
+      ${canPause  ? `<button class="btn btn-ghost" style="padding:5px 10px;font-size:13px;" onclick="pauseTimer(${t.id})">⏸</button>` : ''}
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:13px;" onclick="resetTimer(${t.id})">■</button>
+      <button class="btn btn-ghost" style="padding:5px 10px;font-size:13px;color:var(--text3);" onclick="deleteTimer(${t.id})">✕</button>
+    </div>
+  </div>`;
+}
+
+function renderTimers() {
+  const list  = document.getElementById('timerList');
+  const empty = document.getElementById('timerEmpty');
+  document.getElementById('timerCount').textContent = timers.length;
+  if (timers.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = timers.map(buildTimerItemHTML).join('');
+}
+
+function updateTimerItem(t) {
+  const el = document.getElementById(`ti-${t.id}`);
+  if (!el) return;
+  el.outerHTML = buildTimerItemHTML(t);
+}
+
+// Timer: Enter key in inputs
+document.getElementById('timerSec').addEventListener('keydown', e => { if (e.key === 'Enter') addTimer(); });
+document.getElementById('timerMin').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('timerSec').focus(); });
+
+// ── Service Worker ─────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

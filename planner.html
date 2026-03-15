@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>週間ミールプランナー — 分量スケーラ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f; --bg2: #1a1a1a; --bg3: #242424; --bg4: #2e2e2e;
+    --border: #333; --border2: #444;
+    --accent: #e8ff3c;
+    --accent-dim: rgba(232,255,60,0.12);
+    --accent-dim2: rgba(232,255,60,0.06);
+    --text: #f0f0f0; --text2: #a0a0a0; --text3: #666;
+    --radius: 12px; --radius-sm: 8px;
+  }
+
+  body { font-family: 'Zen Kaku Gothic New', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+
+  /* NAV */
+  nav {
+    max-width: 960px; margin: 0 auto;
+    padding: 24px 24px 0;
+    display: flex; align-items: baseline; gap: 16px;
+  }
+  .nav-logo { font-size: 20px; font-weight: 700; color: var(--accent); text-decoration: none; letter-spacing: -0.5px; }
+  .nav-sep { color: var(--text3); }
+  .nav-page { font-size: 13px; color: var(--text2); }
+
+  main { max-width: 960px; margin: 0 auto; padding: 24px 24px 80px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* CARD */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); gap: 12px; }
+  .card-title { font-size: 13px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+  .card-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .card-body { padding: 20px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 13px; font-weight: 500; border: none; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #0f0f0f; padding: 9px 18px; }
+  .btn-primary:hover { background: #f5ff6e; }
+  .btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border2); padding: 5px 10px; font-size: 11px; }
+  .btn-ghost:hover { background: var(--bg3); color: var(--accent); border-color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--text3); border: 1px solid transparent; padding: 4px 7px; font-size: 11px; }
+  .btn-danger:hover { color: #ff7b7b; border-color: #ff7b7b; background: rgba(255,123,123,0.08); }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+  /* WEEK GRID */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    padding: 16px 20px;
+  }
+  @media (max-width: 700px) { .week-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 420px) { .week-grid { grid-template-columns: 1fr; } }
+
+  .day-col { display: flex; flex-direction: column; gap: 6px; }
+  .day-label {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text3);
+    padding-bottom: 4px; border-bottom: 1px solid var(--border);
+  }
+  .day-label.today { color: var(--accent); border-color: var(--accent); }
+
+  .meal-slot {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 8px 10px;
+    font-size: 12px; position: relative;
+    min-height: 52px;
+  }
+  .meal-slot:hover { border-color: var(--border2); }
+  .meal-name { font-weight: 500; line-height: 1.4; }
+  .meal-persons { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); margin-top: 2px; }
+  .meal-kcal { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); margin-top: 2px; }
+  .meal-del {
+    position: absolute; top: 4px; right: 4px;
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 14px; line-height: 1;
+    padding: 2px 4px; border-radius: 3px;
+    transition: color 0.15s;
+    opacity: 0;
+  }
+  .meal-slot:hover .meal-del { opacity: 1; }
+  .meal-del:hover { color: #ff7b7b; }
+
+  .add-meal-btn {
+    background: transparent; border: 1px dashed var(--border);
+    border-radius: var(--radius-sm); color: var(--text3);
+    font-size: 11px; font-family: inherit;
+    padding: 6px; cursor: pointer; width: 100%;
+    transition: all 0.15s; text-align: center;
+  }
+  .add-meal-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* SHOPPING LIST */
+  .shopping-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px; padding: 16px 20px;
+  }
+  .shop-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; background: var(--bg3);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; transition: background 0.1s;
+    user-select: none;
+  }
+  .shop-item:hover { background: var(--bg4); }
+  .shop-item.checked { opacity: 0.4; }
+  .shop-item.checked .shop-name { text-decoration: line-through; }
+  .shop-checkbox {
+    width: 16px; height: 16px; border: 1.5px solid var(--border2);
+    border-radius: 4px; flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .shop-item.checked .shop-checkbox { background: var(--accent); border-color: var(--accent); }
+  .shop-check-icon { display: none; }
+  .shop-item.checked .shop-check-icon { display: block; }
+  .shop-info { flex: 1; min-width: 0; }
+  .shop-name { font-size: 13px; font-weight: 500; }
+  .shop-amount { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); margin-top: 2px; }
+  .shop-from { font-size: 10px; color: var(--text3); margin-top: 2px; line-height: 1.4; }
+
+  .empty-plan { padding: 32px; text-align: center; color: var(--text3); font-size: 13px; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 360px; animation: slideUp 0.2s ease; }
+  .modal-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .modal-sub { font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .recipe-option-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; margin-bottom: 4px; }
+  .recipe-option {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); cursor: pointer; transition: background 0.1s; gap: 8px;
+  }
+  .recipe-option:hover { background: var(--bg4); border-color: var(--accent); }
+  .recipe-option-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .recipe-option-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); flex-shrink: 0; }
+  .no-recipes-hint { font-size: 12px; color: var(--text3); text-align: center; padding: 16px; }
+
+  /* MISC */
+  .badge { font-family: 'DM Mono', monospace; font-size: 10px; background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(232,255,60,0.25); border-radius: 4px; padding: 1px 6px; }
+
+  @keyframes slideUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">分量スケーラ</a>
+  <span class="nav-sep">/</span>
+  <span class="nav-page">週間ミールプランナー</span>
+</nav>
+
+<main>
+
+  <!-- WEEK PLANNER CARD -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><span class="dot"></span>今週の献立</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span class="badge" id="weekRange"></span>
+        <a href="pantry.html" style="font-size:11px;color:var(--text3);text-decoration:none;font-family:'DM Mono',monospace;border:1px solid var(--border);border-radius:6px;padding:4px 10px;transition:all 0.15s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)';" onmouseout="this.style.color='var(--text3)';this.style.borderColor='var(--border)';">食材在庫</a>
+        <button class="btn btn-ghost btn-sm" onclick="clearWeek()">週をリセット</button>
+      </div>
+    </div>
+    <div class="week-grid" id="weekGrid"></div>
+  </div>
+
+  <!-- SHOPPING LIST CARD -->
+  <div class="card" id="shoppingCard" style="display:none;">
+    <div class="card-header">
+      <span class="card-title"><span class="dot"></span>買い物リスト</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="shopCount" style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;"></span>
+        <button class="btn btn-ghost btn-sm" onclick="uncheckAll()">チェックをリセット</button>
+      </div>
+    </div>
+    <div class="shopping-grid" id="shoppingGrid"></div>
+    <div style="padding:8px 20px 12px;border-top:1px solid var(--border);">
+      <div id="shoppingKcal" style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;text-align:right;"></div>
+    </div>
+  </div>
+
+  <div id="emptyHint" class="card" style="display:none;">
+    <div class="empty-plan">献立を登録すると買い物リストが自動生成されます</div>
+  </div>
+
+</main>
+
+<!-- ADD MEAL MODAL -->
+<div class="modal-overlay hidden" id="addModal" onclick="onModalBg(event)">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">献立を追加</div>
+    <div class="modal-sub" id="modalSub"></div>
+    <div class="recipe-option-list" id="recipeOptions"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA / CONFIG
+// ══════════════════════════════════════════
+
+const DB_NAME  = 'ScalerDB';
+const DB_VER   = 1;
+const DB_STORE = 'recipes';
+const PLAN_KEY = 'mealPlan_v1';
+
+const DAYS = ['月','火','水','木','金','土','日'];
+
+// ── Minimal parsers (mirrored from index.html) ──────
+
+const FAT_KEYS    = ['サラダ油','ごま油','オリーブオイル','バター','マーガリン','油'];
+const POWDER_KEYS = ['砂糖','塩','小麦粉','片栗粉','米粉','コーンスターチ','ベーキングパウダー','きな粉','抹茶','パン粉'];
+function isType(name, keys) { return keys.some(k => name.includes(k)); }
+
+function parseFrac(s) {
+  s = s.trim();
+  if (s.includes('/')) { const [a,b] = s.split('/'); return parseFloat(a)/parseFloat(b); }
+  return parseFloat(s) || 0;
+}
+
+function fmtN(n) {
+  if (n === 0) return '0';
+  if (Number.isInteger(n)) return String(n);
+  const fracs = [[0.5,'1/2'],[0.333,'1/3'],[0.667,'2/3'],[0.25,'1/4'],[0.75,'3/4']];
+  for (const [v,l] of fracs) { if (Math.abs(n-v)<0.04) return l; }
+  const w = Math.floor(n), f = n - w;
+  if (w > 0) for (const [v,l] of fracs) { if (Math.abs(f-v)<0.04) return `${w} ${l}`; }
+  return parseFloat(n.toFixed(1)).toString();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function parseLine(line) {
+  line = line.trim();
+  if (!line) return null;
+  const m = line.match(/^(.+?)\s+((\d+[\d./]*)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*))$/u);
+  if (m) return { name: m[1].trim(), numStr: m[3], unit: (m[4]||'').trim(), suffix: (m[5]||'').trim() };
+  return { name: line, numStr: null, unit: '', suffix: '' };
+}
+
+function unitToGrams(num, unit, name) {
+  const fat = isType(name, FAT_KEYS), pow = isType(name, POWDER_KEYS);
+  switch(unit) {
+    case '大さじ': return fat?num*12:pow?num*9:num*15;
+    case '小さじ': return fat?num*4:pow?num*3:num*5;
+    case 'カップ': return num*200;
+    case 'g':  return num; case 'kg': return num*1000;
+    case 'ml': return num; case 'L':  return num*1000;
+    case '個':
+      if(name.includes('卵')) return num*60; if(name.includes('玉ねぎ')) return num*200;
+      if(name.includes('じゃがいも')) return num*150; if(name.includes('にんじん')) return num*150;
+      return num*100;
+    case '枚': return name.includes('キャベツ')?num*50:num*30;
+    case '本': return name.includes('ねぎ')?num*100:name.includes('にんじん')?num*150:num*100;
+    case 'かけ': case '片': return name.includes('しょうが')?num*10:num*5;
+    default: return null;
+  }
+}
+
+// ── Nutrition (subset) ──────────────────────
+const nutritionDB = {
+  "砂糖":{kcal:384,p:0,f:0,c:99.2},"塩":{kcal:0,p:0,f:0,c:0},"醤油":{kcal:71,p:7.7,f:0,c:7.9},"みりん":{kcal:241,p:0.3,f:0,c:54.9},"酢":{kcal:25,p:0.1,f:0,c:2.4},
+  "サラダ油":{kcal:921,p:0,f:100,c:0},"ごま油":{kcal:921,p:0,f:100,c:0},"オリーブオイル":{kcal:921,p:0,f:100,c:0},"バター":{kcal:745,p:0.5,f:81,c:0.2},
+  "小麦粉":{kcal:368,p:8.3,f:1.5,c:75.8},"片栗粉":{kcal:338,p:0.1,f:0.1,c:86.8},"米":{kcal:358,p:6.1,f:0.9,c:77.6},"パスタ":{kcal:378,p:13,f:1.9,c:72.2},"うどん":{kcal:270,p:6.1,f:0.6,c:56.8},
+  "鶏もも肉":{kcal:204,p:16.6,f:14.2,c:0},"鶏むね肉":{kcal:133,p:23.3,f:1.9,c:0},"豚バラ肉":{kcal:395,p:14.4,f:35.4,c:0.1},"牛肉":{kcal:272,p:17.1,f:22.3,c:0.3},
+  "卵":{kcal:151,p:12.3,f:10.3,c:0.3},"牛乳":{kcal:67,p:3.3,f:3.8,c:4.8},"豆腐":{kcal:56,p:5.3,f:3.5,c:1.6},
+  "にんじん":{kcal:39,p:0.7,f:0.1,c:9.3},"玉ねぎ":{kcal:37,p:1,f:0.1,c:8.8},"じゃがいも":{kcal:76,p:1.8,f:0.1,c:17.3},"キャベツ":{kcal:23,p:1.3,f:0.2,c:5.2},
+  "サーモン":{kcal:204,p:20.1,f:12.8,c:0.1},"タラ":{kcal:77,p:17.6,f:0.2,c:0.1},"まぐろ":{kcal:125,p:26.4,f:1.4,c:0.1},
+  "味噌":{kcal:198,p:12.5,f:6,c:21.9},"マヨネーズ":{kcal:703,p:1.5,f:76,c:3.6},
+};
+function getNutrKey(name) { if(nutritionDB[name]) return name; for(const k of Object.keys(nutritionDB)){if(name.includes(k)) return k;} return null; }
+function calcKcal(grams, name) {
+  if(!grams) return 0;
+  const k = getNutrKey(name); if(!k) return 0;
+  return nutritionDB[k].kcal * grams / 100;
+}
+
+// ══════════════════════════════════════════
+// INDEXEDDB
+// ══════════════════════════════════════════
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(DB_STORE))
+        db.createObjectStore(DB_STORE, { keyPath:'id', autoIncrement:true });
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+async function dbGetAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(DB_STORE,'readonly').objectStore(DB_STORE).getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
+  });
+}
+
+// ══════════════════════════════════════════
+// PLAN STATE  (stored in localStorage as JSON)
+// ══════════════════════════════════════════
+// plan[dayIdx] = [ { recipeId, recipeName, toPerson, ingredients } ]
+
+let plan = Array.from({length:7}, () => []);
+
+function loadPlan() {
+  try {
+    const saved = localStorage.getItem(PLAN_KEY);
+    if (saved) plan = JSON.parse(saved);
+    // Ensure length 7
+    while (plan.length < 7) plan.push([]);
+  } catch(_) {}
+}
+function savePlan() { localStorage.setItem(PLAN_KEY, JSON.stringify(plan)); }
+
+function clearWeek() {
+  if (!confirm('今週の献立をすべてリセットしますか？')) return;
+  plan = Array.from({length:7}, () => []);
+  savePlan(); renderWeek(); renderShopping();
+}
+
+// ══════════════════════════════════════════
+// WEEK GRID RENDER
+// ══════════════════════════════════════════
+
+function getWeekRange() {
+  const now  = new Date();
+  const day  = now.getDay(); // 0=Sun
+  const mon  = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  const sun  = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt  = d => `${d.getMonth()+1}/${d.getDate()}`;
+  return { label: `${fmt(mon)} — ${fmt(sun)}`, todayIdx: (day === 0 ? 6 : day - 1) };
+}
+
+function renderWeek() {
+  const grid = document.getElementById('weekGrid');
+  const { label, todayIdx } = getWeekRange();
+  document.getElementById('weekRange').textContent = label;
+
+  grid.innerHTML = DAYS.map((day, di) => {
+    const meals = plan[di] || [];
+    const mealHtml = meals.map((m, mi) => `
+      <div class="meal-slot">
+        <button class="meal-del" onclick="removeMeal(${di},${mi})" title="削除">×</button>
+        <div class="meal-name">${escHtml(m.recipeName)}</div>
+        <div class="meal-persons">${m.toPerson}人前</div>
+        ${m.kcal ? `<div class="meal-kcal">${Math.round(m.kcal)} kcal</div>` : ''}
+      </div>`).join('');
+
+    return `
+    <div class="day-col">
+      <div class="day-label${di === todayIdx ? ' today' : ''}">${day}</div>
+      ${mealHtml}
+      <button class="add-meal-btn" onclick="openAddModal(${di})">＋ 追加</button>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// SHOPPING LIST
+// ══════════════════════════════════════════
+
+let _shopChecked = {}; // ingredient key → bool
+
+function buildShoppingList() {
+  // Aggregate all ingredients across all meals
+  const agg = {}; // key: ingredient name → { totalGrams, unit, sources, displayAmounts }
+
+  for (let di = 0; di < 7; di++) {
+    for (const meal of (plan[di] || [])) {
+      const ratio = meal.toPerson / (meal.originalPersons || meal.toPerson);
+      for (const line of (meal.ingredients || '').split('\n')) {
+        const parsed = parseLine(line.trim());
+        if (!parsed || !parsed.numStr) continue;
+        const num    = parseFrac(parsed.numStr) * ratio;
+        const grams  = unitToGrams(num, parsed.unit, parsed.name);
+        const key    = parsed.name;
+
+        if (!agg[key]) agg[key] = { grams: 0, unit: parsed.unit, sources: [], nums: [] };
+        if (grams !== null) agg[key].grams += grams;
+        agg[key].nums.push({ num, unit: parsed.unit });
+        agg[key].sources.push(`${DAYS[di]}：${meal.recipeName}`);
+      }
+    }
+  }
+  return agg;
+}
+
+const UNIT_ORDER = ['kg','g','L','ml','カップ','大さじ','小さじ','個','本','枚','かけ','片',''];
+
+function formatAggAmount(entry) {
+  // If grams are available, show in sensible unit
+  if (entry.grams > 0) {
+    const g = entry.grams;
+    if (entry.unit === 'kg' || g >= 1000) return `${fmtN(g/1000)} kg`;
+    if (['g','ml','カップ','大さじ','小さじ','個','本','枚','かけ','片'].includes(entry.unit)) {
+      // Keep original unit if consistent
+      const totalInUnit = entry.nums.reduce((s,n) => {
+        if (n.unit === entry.unit) return s + n.num;
+        return s;
+      }, 0);
+      if (entry.nums.every(n => n.unit === entry.unit)) {
+        return `${fmtN(totalInUnit)} ${entry.unit}`;
+      }
+      return `${fmtN(g)} g`;
+    }
+    return `${fmtN(g)} g`;
+  }
+  // No gram conversion (ambiguous), just sum same-unit amounts
+  const u = entry.nums[0]?.unit || '';
+  const total = entry.nums.reduce((s,n) => s + (n.unit === u ? n.num : 0), 0);
+  return `${fmtN(total)} ${u}`;
+}
+
+function renderShopping() {
+  const agg = buildShoppingList();
+  const keys = Object.keys(agg);
+
+  const card = document.getElementById('shoppingCard');
+  const hint = document.getElementById('emptyHint');
+
+  if (keys.length === 0) {
+    card.style.display = 'none';
+    // Show hint only if any meals exist
+    const hasMeals = plan.some(d => d.length > 0);
+    hint.style.display = hasMeals ? 'block' : 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  hint.style.display = 'none';
+
+  let totalKcal = 0;
+  const grid = document.getElementById('shoppingGrid');
+
+  grid.innerHTML = keys.sort().map(name => {
+    const entry  = agg[name];
+    const amount = formatAggAmount(entry);
+    const kcal   = calcKcal(entry.grams, name);
+    if (kcal) totalKcal += kcal;
+    const uniq   = [...new Set(entry.sources)];
+    const checked= _shopChecked[name] || false;
+
+    return `
+    <div class="shop-item${checked?' checked':''}" onclick="toggleShopCheck('${escHtml(name)}', this)">
+      <div class="shop-checkbox">
+        <svg class="shop-check-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#0f0f0f" stroke-width="2" stroke-linecap="round">
+          <polyline points="1.5,5 4,7.5 8.5,2.5"/>
+        </svg>
+      </div>
+      <div class="shop-info">
+        <div class="shop-name">${escHtml(name)}</div>
+        <div class="shop-amount">${escHtml(amount)}</div>
+        <div class="shop-from">${uniq.map(s=>escHtml(s)).join('・')}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('shopCount').textContent = `${keys.length} 品目`;
+  document.getElementById('shoppingKcal').textContent =
+    totalKcal > 0 ? `週合計カロリー概算：${Math.round(totalKcal)} kcal` : '';
+}
+
+function toggleShopCheck(name, el) {
+  _shopChecked[name] = !(_shopChecked[name] || false);
+  el.classList.toggle('checked', _shopChecked[name]);
+}
+
+function uncheckAll() {
+  _shopChecked = {};
+  renderShopping();
+}
+
+// ══════════════════════════════════════════
+// ADD MEAL MODAL
+// ══════════════════════════════════════════
+
+let _pendingDay = null;
+
+async function openAddModal(dayIdx) {
+  _pendingDay = dayIdx;
+  const modal = document.getElementById('addModal');
+  const opts  = document.getElementById('recipeOptions');
+
+  document.getElementById('modalTitle').textContent = `${DAYS[dayIdx]}曜日の献立を追加`;
+  document.getElementById('modalSub').textContent   = '保存済みレシピから選択';
+
+  opts.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px;">読み込み中…</div>';
+  modal.classList.remove('hidden');
+
+  let recipes = [];
+  try { recipes = await dbGetAll(); } catch(_) {}
+  recipes.sort((a,b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+  if (recipes.length === 0) {
+    opts.innerHTML = `<div class="no-recipes-hint">保存済みレシピがありません。<br>先にメイン画面でレシピを保存してください。</div>`;
+    return;
+  }
+
+  opts.innerHTML = recipes.map(r => `
+    <div class="recipe-option" onclick="addMeal(${r.id})">
+      <span class="recipe-option-name">${escHtml(r.name)}</span>
+      <span class="recipe-option-meta">${r.fromPerson}→${r.toPerson}人前</span>
+    </div>`).join('');
+
+  // Store recipes for later lookup
+  opts._recipes = recipes;
+}
+
+async function addMeal(recipeId) {
+  const opts    = document.getElementById('recipeOptions');
+  const recipes = opts._recipes || [];
+  const recipe  = recipes.find(r => r.id === recipeId);
+  if (!recipe || _pendingDay === null) return;
+
+  // Calculate total kcal for badge
+  let kcal = 0;
+  const ratio = parseFloat(recipe.toPerson) / parseFloat(recipe.fromPerson);
+  for (const line of recipe.ingredients.split('\n')) {
+    const parsed = parseLine(line.trim());
+    if (!parsed || !parsed.numStr) continue;
+    const num   = parseFrac(parsed.numStr) * ratio;
+    const grams = unitToGrams(num, parsed.unit, parsed.name);
+    kcal += calcKcal(grams, parsed.name);
+  }
+
+  plan[_pendingDay].push({
+    recipeId:       recipe.id,
+    recipeName:     recipe.name,
+    ingredients:    recipe.ingredients,
+    fromPersons:    parseFloat(recipe.fromPerson),
+    originalPersons:parseFloat(recipe.fromPerson),
+    toPerson:       parseFloat(recipe.toPerson),
+    kcal:           kcal > 0 ? kcal : null,
+  });
+
+  savePlan();
+  closeModal();
+  renderWeek();
+  renderShopping();
+}
+
+function removeMeal(dayIdx, mealIdx) {
+  plan[dayIdx].splice(mealIdx, 1);
+  savePlan(); renderWeek(); renderShopping();
+}
+
+function closeModal() {
+  document.getElementById('addModal').classList.add('hidden');
+  _pendingDay = null;
+}
+function onModalBg(e) { if (e.target === document.getElementById('addModal')) closeModal(); }
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+
+loadPlan();
+renderWeek();
+renderShopping();
+</script>
+</body>
+</html>

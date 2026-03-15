@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>食材在庫 — 分量スケーラ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;--bg4:#2e2e2e;
+    --border:#333;--border2:#444;
+    --accent:#e8ff3c;--accent-dim:rgba(232,255,60,0.12);--accent-dim2:rgba(232,255,60,0.06);
+    --text:#f0f0f0;--text2:#a0a0a0;--text3:#666;
+    --ok:#6bffb8;--warn:#ffb347;--ng:#ff7b7b;
+    --radius:12px;--radius-sm:8px;
+  }
+  body { font-family:'Zen Kaku Gothic New',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; font-size:15px; line-height:1.6; }
+
+  nav { max-width:960px; margin:0 auto; padding:24px 24px 0; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; justify-content:space-between; }
+  .nav-left { display:flex; align-items:baseline; gap:16px; }
+  .nav-logo { font-size:20px; font-weight:700; color:var(--accent); text-decoration:none; letter-spacing:-0.5px; }
+  .nav-sep { color:var(--text3); }
+  .nav-page { font-size:13px; color:var(--text2); }
+  .nav-links { display:flex; gap:8px; }
+  .nav-link { font-size:11px; color:var(--text3); text-decoration:none; font-family:'DM Mono',monospace; border:1px solid var(--border); border-radius:6px; padding:4px 10px; transition:all 0.15s; }
+  .nav-link:hover { color:var(--accent); border-color:var(--accent); }
+
+  main { max-width:960px; margin:0 auto; padding:24px 24px 80px; display:flex; flex-direction:column; gap:20px; }
+
+  .card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .card-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border); gap:12px; flex-wrap:wrap; }
+  .card-title { font-size:13px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--text2); display:flex; align-items:center; gap:8px; }
+  .card-title .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+  .card-body { padding:20px; }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; font-family:inherit; font-size:13px; font-weight:500; border:none; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+  .btn-primary { background:var(--accent); color:#0f0f0f; padding:9px 18px; }
+  .btn-primary:hover { background:#f5ff6e; }
+  .btn-ghost { background:transparent; color:var(--text2); border:1px solid var(--border2); padding:5px 10px; font-size:11px; }
+  .btn-ghost:hover { background:var(--bg3); color:var(--accent); border-color:var(--accent); }
+  .btn-danger { background:transparent; color:var(--text3); border:1px solid transparent; padding:4px 8px; font-size:11px; }
+  .btn-danger:hover { color:var(--ng); border-color:var(--ng); background:rgba(255,123,123,0.08); }
+
+  /* ADD FORM */
+  .add-form { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; }
+  .add-form .field { display:flex; flex-direction:column; gap:4px; }
+  .add-form label { font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--text3); }
+  .add-form input, .add-form select {
+    background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm);
+    color:var(--text); font-family:inherit; font-size:13px; padding:8px 10px;
+    outline:none; transition:border-color 0.15s; appearance:none; -webkit-appearance:none;
+  }
+  .add-form input:focus, .add-form select:focus { border-color:var(--accent); }
+  .add-form input[name="name"] { width:160px; }
+  .add-form input[name="amount"] { width:80px; }
+  .add-form select { width:90px; }
+  @media(max-width:600px) { .add-form input[name="name"] { width:100%; } }
+
+  /* PANTRY GRID */
+  .pantry-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:8px; padding:16px 20px; }
+  .pantry-item {
+    padding:12px 14px; background:var(--bg3); border:1px solid var(--border);
+    border-radius:var(--radius-sm); position:relative; transition:background 0.1s;
+  }
+  .pantry-item:hover { background:var(--bg4); }
+  .pantry-name { font-size:13px; font-weight:500; margin-bottom:2px; }
+  .pantry-amount { font-family:'DM Mono',monospace; font-size:12px; color:var(--accent); }
+  .pantry-note { font-size:11px; color:var(--text3); margin-top:2px; }
+  .pantry-del { position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; color:var(--text3); font-size:14px; padding:2px 5px; border-radius:3px; opacity:0; transition:opacity 0.15s; }
+  .pantry-item:hover .pantry-del { opacity:1; }
+  .pantry-del:hover { color:var(--ng); }
+  .pantry-empty { padding:32px; text-align:center; color:var(--text3); font-size:13px; }
+
+  /* RECIPE MATCH */
+  .recipe-match-list { display:flex; flex-direction:column; }
+  .match-item {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 20px; border-bottom:1px solid var(--border);
+    transition:background 0.1s;
+  }
+  .match-item:last-child { border-bottom:none; }
+  .match-item:hover { background:var(--bg3); }
+  .match-name { font-size:13px; font-weight:500; flex:1; }
+  .match-meta { font-size:11px; color:var(--text3); }
+  .match-pills { display:flex; gap:5px; flex-wrap:wrap; flex:2; }
+  .pill {
+    font-size:10px; padding:2px 8px; border-radius:20px;
+    font-family:'DM Mono',monospace; border:1px solid;
+  }
+  .pill-ok   { color:var(--ok);  border-color:rgba(107,255,184,0.3); background:rgba(107,255,184,0.08); }
+  .pill-warn { color:var(--warn); border-color:rgba(255,179,71,0.3);  background:rgba(255,179,71,0.08); }
+  .pill-ng   { color:var(--ng);  border-color:rgba(255,123,123,0.3); background:rgba(255,123,123,0.08); }
+  .match-score {
+    font-family:'DM Mono',monospace; font-size:12px; flex-shrink:0;
+    width:36px; text-align:center; padding:3px 6px; border-radius:4px;
+  }
+  .score-full  { background:rgba(107,255,184,0.15); color:var(--ok); }
+  .score-most  { background:rgba(255,179,71,0.12);  color:var(--warn); }
+  .score-low   { background:rgba(255,123,123,0.1);  color:var(--ng); }
+  .empty-match { padding:32px; text-align:center; color:var(--text3); font-size:13px; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);} }
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <a class="nav-logo" href="index.html">分量スケーラ</a>
+    <span class="nav-sep">/</span>
+    <span class="nav-page">食材在庫</span>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="planner.html">週間プランナー</a>
+    <a class="nav-link" href="index.html">レシピ変換</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ADD ITEM -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><span class="dot"></span>冷蔵庫・在庫に追加</span>
+    </div>
+    <div class="card-body">
+      <form class="add-form" onsubmit="addItem(event)">
+        <div class="field">
+          <label>食材名</label>
+          <input name="name" type="text" placeholder="鶏もも肉" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <label>量</label>
+          <input name="amount" type="number" placeholder="300" min="0" step="any">
+        </div>
+        <div class="field">
+          <label>単位</label>
+          <select name="unit">
+            <option value="g">g</option>
+            <option value="kg">kg</option>
+            <option value="ml">ml</option>
+            <option value="L">L</option>
+            <option value="個">個</option>
+            <option value="本">本</option>
+            <option value="枚">枚</option>
+            <option value="大さじ">大さじ</option>
+            <option value="小さじ">小さじ</option>
+            <option value="カップ">カップ</option>
+            <option value="適量">適量</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" type="submit" style="align-self:flex-end;">追加</button>
+        <button class="btn btn-ghost" type="button" onclick="clearPantry()" style="align-self:flex-end;">全削除</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PANTRY GRID -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><span class="dot"></span>在庫一覧</span>
+      <span id="pantryCount" style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;"></span>
+    </div>
+    <div id="pantryGrid" class="pantry-grid">
+      <div class="pantry-empty">在庫がありません</div>
+    </div>
+  </div>
+
+  <!-- RECIPE MATCH -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><span class="dot"></span>作れるレシピ（在庫照合）</span>
+      <span style="font-size:11px;color:var(--text3);">● 全揃い　▲ 1〜2品不足　✕ 多数不足</span>
+    </div>
+    <div id="recipeMatchList" class="recipe-match-list">
+      <div class="empty-match">レシピと在庫を登録すると照合結果が表示されます</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════
+// INDEXEDDB  (shared with index.html)
+// ══════════════════════════════════════════
+
+const DB_NAME  = 'ScalerDB';
+const DB_VER   = 1;
+const DB_STORE = 'recipes';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(DB_STORE))
+        db.createObjectStore(DB_STORE, { keyPath:'id', autoIncrement:true });
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+async function dbGetAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(DB_STORE,'readonly').objectStore(DB_STORE).getAll();
+    req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error);
+  });
+}
+
+// ══════════════════════════════════════════
+// PANTRY STATE  (localStorage)
+// ══════════════════════════════════════════
+
+const PANTRY_KEY = 'pantry_v1';
+let pantry = []; // [ { name, amount, unit } ]
+
+function loadPantry() {
+  try { pantry = JSON.parse(localStorage.getItem(PANTRY_KEY)) || []; } catch(_) {}
+}
+function savePantry() { localStorage.setItem(PANTRY_KEY, JSON.stringify(pantry)); }
+
+// ══════════════════════════════════════════
+// PARSING  (minimal mirror)
+// ══════════════════════════════════════════
+
+function parseLine(line) {
+  line = line.trim(); if(!line) return null;
+  const m = line.match(/^(.+?)\s+((\d+[\d./]*)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)?(.*))$/u);
+  if(m) return { name:m[1].trim(), numStr:m[3], unit:(m[4]||'').trim() };
+  return { name:line, numStr:null, unit:'' };
+}
+
+function parseFrac(s) {
+  s = s.trim();
+  if(s.includes('/')) { const [a,b]=s.split('/'); return parseFloat(a)/parseFloat(b); }
+  return parseFloat(s)||0;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════
+// ADD / REMOVE
+// ══════════════════════════════════════════
+
+function addItem(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const name   = fd.get('name').trim();
+  const amount = parseFloat(fd.get('amount')) || null;
+  const unit   = fd.get('unit');
+  if (!name) return;
+
+  // Update existing if same name
+  const existing = pantry.find(p => p.name === name);
+  if (existing) { existing.amount = amount; existing.unit = unit; }
+  else pantry.push({ name, amount, unit });
+
+  savePantry();
+  e.target.reset();
+  e.target.querySelector('[name="name"]').focus();
+  renderPantry();
+  renderMatches();
+}
+
+function removeItem(name) {
+  pantry = pantry.filter(p => p.name !== name);
+  savePantry(); renderPantry(); renderMatches();
+}
+
+function clearPantry() {
+  if (!confirm('在庫をすべて削除しますか？')) return;
+  pantry = []; savePantry(); renderPantry(); renderMatches();
+}
+
+// ══════════════════════════════════════════
+// RENDER PANTRY
+// ══════════════════════════════════════════
+
+function renderPantry() {
+  const grid = document.getElementById('pantryGrid');
+  document.getElementById('pantryCount').textContent = `${pantry.length} 品目`;
+  if (pantry.length === 0) {
+    grid.innerHTML = '<div class="pantry-empty">在庫がありません</div>';
+    return;
+  }
+  grid.innerHTML = [...pantry].sort((a,b)=>a.name.localeCompare(b.name,'ja')).map(item => `
+    <div class="pantry-item">
+      <button class="pantry-del" onclick="removeItem('${escHtml(item.name)}')" title="削除">×</button>
+      <div class="pantry-name">${escHtml(item.name)}</div>
+      <div class="pantry-amount">${item.amount !== null ? item.amount : '—'} ${escHtml(item.unit)}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// RECIPE MATCHING
+// ══════════════════════════════════════════
+
+async function renderMatches() {
+  const list = document.getElementById('recipeMatchList');
+  let recipes = [];
+  try { recipes = await dbGetAll(); } catch(_) {}
+
+  if (recipes.length === 0) {
+    list.innerHTML = '<div class="empty-match">保存済みレシピがありません。メイン画面でレシピを保存してください。</div>';
+    return;
+  }
+  if (pantry.length === 0) {
+    list.innerHTML = '<div class="empty-match">在庫を登録すると照合結果が表示されます</div>';
+    return;
+  }
+
+  const pantryNames = new Set(pantry.map(p => p.name.toLowerCase()));
+
+  const results = recipes.map(recipe => {
+    const lines = recipe.ingredients.split('\n').map(l => parseLine(l.trim())).filter(p => p && p.name);
+    const total = lines.length;
+    if (total === 0) return null;
+
+    const checks = lines.map(ing => {
+      // Check if any pantry item name includes the ingredient name (fuzzy)
+      const has = pantry.some(p =>
+        p.name.includes(ing.name) || ing.name.includes(p.name)
+      );
+      return { name: ing.name, has };
+    });
+
+    const haveCount = checks.filter(c => c.has).length;
+    const missing   = checks.filter(c => !c.has).length;
+
+    return { recipe, checks, total, haveCount, missing };
+  }).filter(Boolean);
+
+  // Sort: fewer missing first
+  results.sort((a,b) => a.missing - b.missing);
+
+  list.innerHTML = results.map(r => {
+    const pct   = r.haveCount / r.total;
+    const scoreClass = pct === 1 ? 'score-full' : pct >= 0.7 ? 'score-most' : 'score-low';
+    const scorePct = Math.round(pct * 100);
+
+    // Show max 6 pills
+    const shown  = r.checks.slice(0, 6);
+    const extra  = r.checks.length - shown.length;
+    const pills  = shown.map(c => {
+      const cls = c.has ? 'pill-ok' : 'pill-ng';
+      return `<span class="pill ${cls}">${escHtml(c.name)}</span>`;
+    }).join('') + (extra > 0 ? `<span class="pill" style="color:var(--text3);border-color:var(--border)">+${extra}</span>` : '');
+
+    const missingNames = r.checks.filter(c=>!c.has).map(c=>c.name).join('、');
+
+    return `
+    <div class="match-item">
+      <div>
+        <div class="match-name">${escHtml(r.recipe.name)}</div>
+        <div class="match-meta">${r.recipe.fromPerson}→${r.recipe.toPerson}人前${missingNames ? `　不足：${escHtml(missingNames)}` : ''}</div>
+      </div>
+      <div class="match-pills">${pills}</div>
+      <span class="match-score ${scoreClass}">${scorePct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+
+loadPantry();
+renderPantry();
+renderMatches();
+</script>
+</body>
+</html>
