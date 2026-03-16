@@ -2,15 +2,18 @@
 // HELPERS
 // ══════════════════════════════════════════
 
-// 最大公約数
-function _gcd(a, b) { return b < 0.001 ? a : _gcd(b, a % b); }
+// 最大公約数（整数のみ）
+function _gcd(a, b) { a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b)); return b === 0 ? a : _gcd(b, a % b); }
 
 // 小数→分数文字列（分母2〜16の範囲で近似、例: 0.333→"1/3", 0.4→"2/5"）
+// 整数に近い値（frac≈1 などの浮動小数点誤差）は null を返す
 function _toFracStr(n) {
+  if (n <= 0 || n >= 1) return null; // 整数・0・1以上は分数にしない
   for (let d = 2; d <= 16; d++) {
     const num = Math.round(n * d);
-    if (Math.abs(num / d - n) < 0.001 && num > 0) {
-      const g = Math.round(_gcd(num, d));
+    if (num <= 0 || num >= d) continue; // 0/d や d/d（=整数）は除外
+    if (Math.abs(num / d - n) < 0.001) {
+      const g = _gcd(num, d);
       return `${num/g}/${d/g}`;
     }
   }
@@ -18,14 +21,17 @@ function _toFracStr(n) {
 }
 
 function fmtN(n) {
-  if (n === 0) return '0';
-  if (Number.isInteger(n)) return String(n);
-  const whole = Math.floor(n);
-  const frac  = n - whole;
-  const fracStr = _toFracStr(whole > 0 ? frac : n);
+  if (!isFinite(n) || isNaN(n)) return '0';
+  // 浮動小数点誤差を丸める（例: 0.9999999→1, 1.0000001→1）
+  const rounded = Math.round(n * 10000) / 10000;
+  if (rounded === 0) return '0';
+  if (Number.isInteger(rounded)) return String(rounded);
+  const whole = Math.floor(rounded);
+  const frac  = rounded - whole;
+  const fracStr = _toFracStr(frac > 0 ? frac : rounded);
   if (whole > 0 && fracStr) return `${whole}と${fracStr}`;
   if (whole === 0 && fracStr) return fracStr;
-  return parseFloat(n.toFixed(2)).toString();
+  return parseFloat(rounded.toFixed(2)).toString();
 }
 
 function parseFrac(s) {
