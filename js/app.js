@@ -212,14 +212,15 @@ async function dbDelete(id) {
 var _savedOpen = false;
 
 function toggleSavedPanel() {
-  _savedOpen = !_savedOpen;
   const body    = document.getElementById('savedBody');
   const chevron = document.getElementById('savedChevron');
+  if (!body || !chevron) return;
+  _savedOpen = !_savedOpen;
   if (_savedOpen) {
     body.classList.remove('closed');
     body.style.maxHeight = body.scrollHeight + 'px';
     chevron.classList.add('open');
-    renderRecipeList(); // refresh on open
+    renderRecipeList();
   } else {
     body.style.maxHeight = '0';
     body.classList.add('closed');
@@ -230,6 +231,7 @@ function toggleSavedPanel() {
 async function renderRecipeList() {
   const list  = document.getElementById('recipeList');
   const count = document.getElementById('recipeCount');
+  if (!list || !count) return; // savedCard が非表示の場合はスキップ
   let recipes = [];
   try { recipes = await dbGetAll(); } catch(e) { /* IndexedDB unavailable */ }
 
@@ -272,10 +274,9 @@ async function loadRecipe(id) {
 async function deleteRecipe(id) {
   await dbDelete(id);
   await renderRecipeList();
-  // Update max-height after content changes
   if (_savedOpen) {
     const body = document.getElementById('savedBody');
-    body.style.maxHeight = body.scrollHeight + 'px';
+    if (body) body.style.maxHeight = body.scrollHeight + 'px';
   }
 }
 
@@ -303,11 +304,10 @@ async function confirmSave() {
   await dbSaveRecipe(name);
   closeSaveModal();
   await renderRecipeList();
-  // Auto-open saved panel to show result
-  if (!_savedOpen) toggleSavedPanel();
-  else if (_savedOpen) {
-    const body = document.getElementById('savedBody');
-    body.style.maxHeight = body.scrollHeight + 'px';
+  const body = document.getElementById('savedBody');
+  if (body) {
+    if (!_savedOpen) toggleSavedPanel();
+    else body.style.maxHeight = body.scrollHeight + 'px';
   }
 }
 
@@ -865,8 +865,8 @@ function updateBakerTable() {
   const totalRow = document.getElementById('bakerTotalRow');
 
   if (!flourG || flourG <= 0) {
-    _bakerData.forEach(item => {
-      const cell = document.getElementById(`bp-calc-${item.name}`);
+    _bakerData.forEach((_, i) => {
+      const cell = document.getElementById(`bp-calc-${i}`);
       if (cell) cell.textContent = '—';
     });
     totalRow.style.display = 'none';
