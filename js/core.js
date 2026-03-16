@@ -69,7 +69,7 @@ function parseLine(line) {
   // 単位先パターン: 大さじ2, 小さじ1/2, カップ1/2
   const reUF = /(大さじ|小さじ|カップ)\s*([\d./]+)\s*$/u;
   // 数字先パターン: 300g, 2個, 10ml, 1/2カップ
-  const reNF = /([\d./]+)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片|合|升|玉|丁|束|把|房|切れ|粒|節|匹|尾|羽|掴み|袋|缶|棒)\s*$/u;
+  const reNF = /([\d./]+)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片|合|升|斗|勺|玉|丁|束|把|房|切れ|粒|節|匹|尾|腹|羽|頭|掴み|袋|缶|棒)\s*$/u;
 
   const mUF = line.match(reUF);
   const mNF = line.match(reNF);
@@ -136,6 +136,8 @@ function unitToGrams(num, unit, name) {
       if (name.includes('米') || name.includes('麦') || name.includes('もち')) return num*150;
       return num*180;
     case '升': return num*1800;
+    case '斗': return num*18000;
+    case '勺': return num*18;
     case '玉':
       if (name.includes('キャベツ'))                          return num*1000;
       if (name.includes('白菜'))                              return num*1500;
@@ -184,9 +186,21 @@ function unitToGrams(num, unit, name) {
       if (name.includes('えび') || name.includes('海老') || name.includes('エビ')) return num*20;
       if (name.includes('あゆ') || name.includes('鮎'))      return num*60;
       return num*100;
+    case '腹':
+      // 魚の腹子（卵巣）: たらこ/いくら/すじこ等
+      if (name.includes('たらこ') || name.includes('明太'))   return num*60;
+      if (name.includes('いくら') || name.includes('すじこ')) return num*50;
+      if (name.includes('かずのこ') || name.includes('数の子')) return num*30;
+      return num*50;
     case '羽':
       if (name.includes('鶏') || name.includes('チキン') || name.includes('にわとり')) return num*500;
       return num*500;
+    case '頭':
+      // 大型動物（牛・豚・羊など）は料理レシピでは稀だが念のため
+      if (name.includes('牛') || name.includes('うし'))       return num*400000;
+      if (name.includes('豚') || name.includes('ぶた'))       return num*100000;
+      if (name.includes('羊') || name.includes('ひつじ'))     return num*30000;
+      return num*100000;
     case '掴み':
       if (name.includes('そば') || name.includes('うどん') || name.includes('パスタ')) return num*80;
       if (name.includes('わかめ') || name.includes('海藻') || name.includes('昆布'))  return num*5;
