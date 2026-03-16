@@ -102,8 +102,8 @@ function parseLine(line) {
 // UNIT → GRAMS
 // ══════════════════════════════════════════
 
-const FAT_KEYS = ['サラダ油','ごま油','オリーブオイル','バター','マーガリン','油'];
-const POWDER_KEYS = ['砂糖','塩','小麦粉','片栗粉','米粉','コーンスターチ','ベーキングパウダー','きな粉','抹茶','パン粉'];
+var FAT_KEYS = ['サラダ油','ごま油','オリーブオイル','バター','マーガリン','油'];
+var POWDER_KEYS = ['砂糖','塩','小麦粉','片栗粉','米粉','コーンスターチ','ベーキングパウダー','きな粉','抹茶','パン粉'];
 
 function isType(name, keys) { return keys.some(k => name.includes(k)); }
 
@@ -214,9 +214,9 @@ function scaleIngredient(parsed, ratio) {
 // STATE
 // ══════════════════════════════════════════
 
-let _nutrTotal = null;   // { kcal, p, f, c } total
-let _nutrPer   = null;   // per person
-let _nutrView  = 'total';
+var _nutrTotal = null;   // { kcal, p, f, c } total
+var _nutrPer   = null;   // per person
+var _nutrView  = 'total';
 
 // ══════════════════════════════════════════
 // MAIN CONVERT

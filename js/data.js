@@ -1,5 +1,5 @@
 // ── 食材代替品 ────────────────────────────────────────────
-const substitutes = {
+var substitutes = {
   "牛乳": ["豆乳（同量・弱火で使用）","オーツミルク（同量）","アーモンドミルク（同量）"],
   "バター": ["マーガリン（同量）","サラダ油（0.8倍量）","オリーブオイル（0.8倍量）"],
   "生クリーム": ["絹ごし豆腐をミキサーでなめらかに","豆乳クリーム（同量）"],
@@ -30,7 +30,7 @@ const substitutes = {
 
 // ── 食材名 表記揺れ正規化テーブル ───────────────────────────
 // 漢字・カタカナ・別名 → built-inDBキーまたはfoodDB検索語に正規化
-const FOOD_ALIASES = [
+var FOOD_ALIASES = [
   // 野菜類
   [/人参|ニンジン/,                    'にんじん'],
   [/牛蒡|ゴボウ/,                      'ごぼう'],
@@ -139,7 +139,7 @@ const FOOD_ALIASES = [
 
 // foodDB内での特定エントリへのダイレクトマッピング
 // 一般名 → あいまい検索を避けるための具体名
-const FOODDB_DIRECT = {
+var FOODDB_DIRECT = {
   'さけ':     'しろさけ',        // しろさけ 生
   'いか':     'するめいか',      // するめいか 生（すいかに引っかからないよう）
   'たこ':     'まだこ',          // まだこ 生
@@ -173,12 +173,12 @@ function applyFoodAliases(name) {
 }
 
 // 肉類: ユーザーの入力を [species, cut] トークンに分解して複合検索
-const MEAT_SPECIES = [
+var MEAT_SPECIES = [
   [/鶏|とり肉|チキン|手羽/, 'にわとり'],
   [/豚(?!足)/,              'ぶた'],
   [/牛(?!乳|蒡)/,           'うし'],
 ];
-const MEAT_CUTS = [
+var MEAT_CUTS = [
   [/もも肉|もも(?!桃)/,    'もも'],
   [/むね肉|むね/,           'むね'],
   [/ささみ/,                'ささみ'],
@@ -263,7 +263,7 @@ function findInFoodDB(name) {
 
 // per 100g: { kcal, p=protein, f=fat, c=carbs, s=sodium(mg) }
 // 文部科学省 日本食品標準成分表2020年版（八訂）準拠（主要食材のshortcut。全品目はfoodDBEntriesに収録）
-const nutritionDB = {
+var nutritionDB = {
   "砂糖":       {kcal:384,p:0,   f:0,    c:99.2, s:1},
   "塩":         {kcal:0,  p:0,   f:0,    c:0,    s:39000},
   "醤油":       {kcal:71, p:7.7, f:0,    c:7.9,  s:5700},
@@ -321,7 +321,7 @@ const nutritionDB = {
 
 // ── アレルゲンDB ──────────────────────────────
 // mandatory = 特定原材料7品目, advisory = 推奨表示品目
-const allergenDB = [
+var allergenDB = [
   // label, mandatory, keyword patterns
   { label:'小麦', mandatory:true,  keys:['小麦粉','パスタ','うどん','パン粉','ベーキングパウダー','クレープ','ピザ','ラーメン','そうめん','素麺'] },
   { label:'卵',   mandatory:true,  keys:['卵','たまご','マヨネーズ'] },

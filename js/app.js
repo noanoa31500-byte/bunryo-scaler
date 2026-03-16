@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════
 
-let _recog      = null;
-let _voiceOn    = false;
+var _recog      = null;
+var _voiceOn    = false;
 
 function initVoice() {
   const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -152,9 +152,9 @@ function clearAll() {
 // INDEXEDDB
 // ══════════════════════════════════════════
 
-const DB_NAME  = 'ScalerDB';
-const DB_VER   = 1;
-const DB_STORE = 'recipes';
+var DB_NAME  = 'ScalerDB';
+var DB_VER   = 1;
+var DB_STORE = 'recipes';
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -208,7 +208,7 @@ async function dbDelete(id) {
 // SAVED RECIPES UI
 // ══════════════════════════════════════════
 
-let _savedOpen = false;
+var _savedOpen = false;
 
 function toggleSavedPanel() {
   _savedOpen = !_savedOpen;
@@ -321,7 +321,7 @@ document.getElementById('recipeNameInput').addEventListener('keydown', e => {
 // Minimal QR encoder: Version 1-10, ECC Level M, Byte mode (UTF-8)
 // Based on the open QR spec. Generates a pixel matrix then draws to Canvas.
 
-const QR = (() => {
+var QR = (() => {
   // ── Reed-Solomon GF(256) ──────────────────
   const GF = (() => {
     const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
@@ -669,7 +669,7 @@ async function importRecipes(event) {
 // ══════════════════════════════════════════
 
 // Keywords that VIOLATE each profile (partial match)
-const dietViolations = {
+var dietViolations = {
   gf: ['小麦','薄力粉','強力粉','中力粉','小麦粉','パスタ','うどん','そうめん','ひやむぎ','スパゲティ','ラーメン','中華麺','パン粉','天ぷら粉','お好み焼き粉','ホットケーキ粉','餃子の皮','ワンタンの皮','醤油','みりん','味噌','麦茶','麦'],
   vegan: ['鶏','豚','牛','羊','ラム','鴨','豚バラ','鶏もも','鶏むね','ひき肉','挽き肉','合挽き','レバー','ベーコン','ソーセージ','ハム','サーモン','マグロ','タラ','鮭','エビ','イカ','タコ','アサリ','シジミ','ホタテ','カツオ','魚','卵','たまご','牛乳','ミルク','バター','生クリーム','チーズ','ヨーグルト','はちみつ','蜂蜜','ゼラチン','ラード','ベーコン','アンチョビ','明太子','かつお節','煮干し','だし'],
   lowc: ['砂糖','上白糖','グラニュー糖','ざらめ','はちみつ','蜂蜜','みりん','米','ご飯','パスタ','うどん','そば','パン','小麦粉','片栗粉','コーンスターチ','じゃがいも','さつまいも','かぼちゃ','とうもろこし','バナナ','ぶどう','砂糖菓子','ケチャップ','ソース','みりん風'],
@@ -677,15 +677,15 @@ const dietViolations = {
 };
 
 // Keywords that are SAFE / compliant
-const dietSafe = {
+var dietSafe = {
   gf: ['米','米粉','片栗粉','コーンスターチ','じゃがいも','さつまいも','そば粉','タピオカ'],
   vegan: ['豆腐','納豆','厚揚げ','油揚げ','高野豆腐','きぬ豆腐','豆乳','大豆','枝豆','えだまめ','テンペ'],
   lowc: ['きのこ','ブロッコリー','ほうれん草','小松菜','キャベツ','レタス','トマト','きゅうり','ナス','ピーマン','鶏むね','ささみ','豆腐','納豆'],
   lowsalt: ['レモン','ゆず','ライム','酢','にんにく','しょうが','ごま','ハーブ','スパイス','こしょう','唐辛子','わさび'],
 };
 
-let _activeDiets = new Set();
-let _lastResults = [];
+var _activeDiets = new Set();
+var _lastResults = [];
 
 function toggleDiet(key) {
   if (_activeDiets.has(key)) {
@@ -750,10 +750,10 @@ function applyDietHighlight() {
 // ══════════════════════════════════════════
 
 // Flour/starch keywords that count as the "base" (100%)
-const flourKeywords = ['小麦粉','薄力粉','強力粉','中力粉','全粒粉','ライ麦粉','米粉','そば粉','コーンミール','アーモンドプードル','片栗粉','コーンスターチ','タピオカ粉'];
+var flourKeywords = ['小麦粉','薄力粉','強力粉','中力粉','全粒粉','ライ麦粉','米粉','そば粉','コーンミール','アーモンドプードル','片栗粉','コーンスターチ','タピオカ粉'];
 
-let _appMode = 'normal';  // 'normal' | 'baker'
-let _bakerData = [];      // { name, grams, pct, isBase }
+var _appMode = 'normal';  // 'normal' | 'baker'
+var _bakerData = [];      // { name, grams, pct, isBase }
 
 function setMode(mode) {
   _appMode = mode;
@@ -883,9 +883,9 @@ function updateBakerTable() {
 
 // costPrices[name] = { price: number (円), qty: number (g/ml/個) }
 // loaded from localStorage
-let _costPrices = {};
-let _costResults = [];  // { name, grams } — filled on convert
-let _costOpen = false;
+var _costPrices = {};
+var _costResults = [];  // { name, grams } — filled on convert
+var _costOpen = false;
 
 (function loadCostPrices() {
   try { _costPrices = JSON.parse(localStorage.getItem('costPrices_v1') || '{}'); } catch(_) {}
@@ -958,7 +958,7 @@ function onCostInput(i) {
   recalcCost(_lastToPerson);
 }
 
-let _lastToPerson = 1;
+var _lastToPerson = 1;
 
 function recalcCost(toPerson) {
   _lastToPerson = toPerson || 1;
@@ -992,9 +992,9 @@ function recalcCost(toPerson) {
 // TIMER
 // ══════════════════════════════════════════
 
-const timers = [];   // { id, name, total, remaining, state:'idle'|'running'|'paused'|'done', intervalId }
-let _timerOpen = false;
-let _timerNotifGranted = false;
+var timers = [];   // { id, name, total, remaining, state:'idle'|'running'|'paused'|'done', intervalId }
+var _timerOpen = false;
+var _timerNotifGranted = false;
 
 function toggleTimerPanel() {
   _timerOpen = !_timerOpen;
