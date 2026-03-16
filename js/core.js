@@ -2,21 +2,30 @@
 // HELPERS
 // ══════════════════════════════════════════
 
+// 最大公約数
+function _gcd(a, b) { return b < 0.001 ? a : _gcd(b, a % b); }
+
+// 小数→分数文字列（分母2〜16の範囲で近似、例: 0.333→"1/3", 0.4→"2/5"）
+function _toFracStr(n) {
+  for (let d = 2; d <= 16; d++) {
+    const num = Math.round(n * d);
+    if (Math.abs(num / d - n) < 0.001 && num > 0) {
+      const g = Math.round(_gcd(num, d));
+      return `${num/g}/${d/g}`;
+    }
+  }
+  return null;
+}
+
 function fmtN(n) {
   if (n === 0) return '0';
   if (Number.isInteger(n)) return String(n);
-  const fracs = [[0.5,'1/2'],[0.333,'1/3'],[0.667,'2/3'],[0.25,'1/4'],[0.75,'3/4'],[0.125,'1/8']];
-  for (const [val, label] of fracs) {
-    if (Math.abs(n - val) < 0.04) return label;
-  }
   const whole = Math.floor(n);
-  const frac = n - whole;
-  if (whole > 0) {
-    for (const [val, label] of fracs) {
-      if (Math.abs(frac - val) < 0.04) return `${whole} ${label}`;
-    }
-  }
-  return parseFloat(n.toFixed(1)).toString();
+  const frac  = n - whole;
+  const fracStr = _toFracStr(whole > 0 ? frac : n);
+  if (whole > 0 && fracStr) return `${whole}と${fracStr}`;
+  if (whole === 0 && fracStr) return fracStr;
+  return parseFloat(n.toFixed(2)).toString();
 }
 
 function parseFrac(s) {
