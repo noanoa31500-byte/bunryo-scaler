@@ -69,7 +69,7 @@ function parseLine(line) {
   // 単位先パターン: 大さじ2, 小さじ1/2, カップ1/2
   const reUF = /(大さじ|小さじ|カップ)\s*([\d./]+)\s*$/u;
   // 数字先パターン: 300g, 2個, 10ml, 1/2カップ
-  const reNF = /([\d./]+)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片)\s*$/u;
+  const reNF = /([\d./]+)\s*(大さじ|小さじ|カップ|kg|ml|L|g|個|本|枚|かけ|片|合|升|玉|丁|束|把|房|切れ|粒|節|匹|尾|羽|掴み|袋|缶|棒)\s*$/u;
 
   const mUF = line.match(reUF);
   const mNF = line.match(reNF);
@@ -130,6 +130,87 @@ function unitToGrams(num, unit, name) {
       if (name.includes('にんじん')) return num*150;
       return num*100;
     case 'かけ': case '片': return name.includes('しょうが') ? num*10 : num*5;
+    // ── 日本固有の単位 ──────────────────────────────────
+    case '合':
+      // 米・麦などは体積→重量変換 (1合=150g), 液体は180ml
+      if (name.includes('米') || name.includes('麦') || name.includes('もち')) return num*150;
+      return num*180;
+    case '升': return num*1800;
+    case '玉':
+      if (name.includes('キャベツ'))                          return num*1000;
+      if (name.includes('白菜'))                              return num*1500;
+      if (name.includes('たまねぎ') || name.includes('玉ねぎ') || name.includes('オニオン')) return num*200;
+      if (name.includes('にんにく') || name.includes('ガーリック')) return num*50;
+      if (name.includes('レタス'))                            return num*300;
+      return num*200;
+    case '丁':
+      if (name.includes('豆腐') || name.includes('とうふ'))  return num*300;
+      if (name.includes('こんにゃく'))                        return num*250;
+      return num*300;
+    case '束': case '把':
+      if (name.includes('ほうれん') || name.includes('小松菜') || name.includes('水菜') || name.includes('三つ葉')) return num*200;
+      if (name.includes('そば') || name.includes('蕎麦'))    return num*100;
+      if (name.includes('うどん'))                            return num*200;
+      if (name.includes('春菊'))                              return num*150;
+      if (name.includes('にら') || name.includes('ニラ'))    return num*100;
+      if (name.includes('パスタ') || name.includes('スパゲッティ')) return num*100;
+      return num*150;
+    case '房':
+      if (name.includes('ブロッコリー'))                      return num*100;
+      if (name.includes('ぶどう') || name.includes('葡萄') || name.includes('グレープ')) return num*300;
+      if (name.includes('バナナ'))                            return num*80;
+      if (name.includes('エリンギ') || name.includes('しめじ') || name.includes('まいたけ')) return num*100;
+      return num*100;
+    case '切れ':
+      if (name.includes('鮭') || name.includes('さけ') || name.includes('サーモン')) return num*80;
+      if (name.includes('鱈') || name.includes('たら'))      return num*80;
+      if (name.includes('ぶり') || name.includes('鰤'))      return num*80;
+      if (name.includes('パン') || name.includes('食パン'))  return num*60;
+      return num*80;
+    case '粒':
+      if (name.includes('コーン') || name.includes('とうもろこし')) return num*0.3;
+      if (name.includes('ぶどう') || name.includes('チェリー') || name.includes('さくらんぼ')) return num*8;
+      if (name.includes('大豆') || name.includes('枝豆') || name.includes('そら豆')) return num*1;
+      return num*5;
+    case '節':
+      if (name.includes('かつお') || name.includes('鰹') || name.includes('削り')) return num*3;
+      if (name.includes('昆布') || name.includes('コンブ'))  return num*10;
+      if (name.includes('ごぼう') || name.includes('牛蒡'))  return num*150;
+      return num*10;
+    case '匹': case '尾':
+      if (name.includes('あじ') || name.includes('鰺') || name.includes('いわし') || name.includes('鰯')) return num*100;
+      if (name.includes('さんま') || name.includes('秋刀魚')) return num*150;
+      if (name.includes('いか') || name.includes('烏賊'))    return num*200;
+      if (name.includes('えび') || name.includes('海老') || name.includes('エビ')) return num*20;
+      if (name.includes('あゆ') || name.includes('鮎'))      return num*60;
+      return num*100;
+    case '羽':
+      if (name.includes('鶏') || name.includes('チキン') || name.includes('にわとり')) return num*500;
+      return num*500;
+    case '掴み':
+      if (name.includes('そば') || name.includes('うどん') || name.includes('パスタ')) return num*80;
+      if (name.includes('わかめ') || name.includes('海藻') || name.includes('昆布'))  return num*5;
+      if (name.includes('塩') || name.includes('砂糖') || name.includes('粉'))        return num*3;
+      return num*15;
+    case '袋':
+      if (name.includes('もやし'))                            return num*200;
+      if (name.includes('ほうれん') || name.includes('小松菜')) return num*200;
+      if (name.includes('豆腐') || name.includes('とうふ'))  return num*300;
+      if (name.includes('ミックスベジタブル'))                return num*200;
+      return num*200;
+    case '缶':
+      if (name.includes('トマト'))                            return num*400;
+      if (name.includes('ツナ') || name.includes('まぐろ'))  return num*70;
+      if (name.includes('サバ') || name.includes('鯖'))      return num*190;
+      if (name.includes('コーン') || name.includes('とうもろこし')) return num*200;
+      if (name.includes('大豆') || name.includes('豆'))      return num*200;
+      return num*200;
+    case '棒':
+      if (name.includes('ちくわ'))                            return num*30;
+      if (name.includes('かにかま') || name.includes('カニカマ')) return num*12;
+      if (name.includes('バター'))                            return num*200;
+      if (name.includes('きゅうり') || name.includes('胡瓜')) return num*100;
+      return num*50;
     default: return null;
   }
 }
