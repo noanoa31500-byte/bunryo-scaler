@@ -566,7 +566,7 @@ function findInFoodDB(name) {
   if (startsWith.length > 0) return toNutrObj(pickRaw(startsWith));
   // 3. 括弧除去した先頭トークンにqが含まれる（「（まぐろ類）」→まぐろ）
   const tok1 = foodDBEntries.filter(e => {
-    const tok = e[0].split(' ')[0].replace(/[（(）)［\]＜＞]/g, '');
+    const tok = e[0].split(' ')[0].replace(/[（(）)［］\[\]＜＞]/g, '');
     return tok.length >= 2 && tok.includes(q);
   });
   if (tok1.length > 0) return toNutrObj(pickRaw(tok1));
@@ -621,7 +621,6 @@ var nutritionDB = {
   "ブロッコリー":{kcal:33, p:4.3, f:0.5,  c:5.2,  s:20},
   "しいたけ":   {kcal:18, p:3.0, f:0.4,  c:3.7,  s:2},
   "えのき":     {kcal:22, p:2.7, f:0.2,  c:7.6,  s:2},
-  "しめじ":     {kcal:14, p:2.7, f:0.5,  c:4.8,  s:2},
   "サーモン":   {kcal:204,p:20.1,f:12.8, c:0.1,  s:59},
   "タラ":       {kcal:77, p:17.6,f:0.2,  c:0.1,  s:110},
   "まぐろ":     {kcal:125,p:26.4,f:1.4,  c:0.1,  s:45},
