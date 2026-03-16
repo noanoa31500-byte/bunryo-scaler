@@ -52,10 +52,18 @@ function parseLine(line) {
   // 漢数字・分量表現の正規化
   line = line.replace(/一/g,'1').replace(/二/g,'2').replace(/三/g,'3')
              .replace(/四/g,'4').replace(/五/g,'5').replace(/六/g,'6')
-             .replace(/七/g,'7').replace(/八/g,'8').replace(/九/g,'9')
-             .replace(/半(?=杯|$|\s)/g,'0.5');
-  // 「大さじ1杯」→「大さじ1」（杯は助数詞として除去）
-  line = line.replace(/(大さじ|小さじ)\s*([\d./]+)\s*杯/gu, '$1$2');
+             .replace(/七/g,'7').replace(/八/g,'8').replace(/九/g,'9');
+  // 大さじ/小さじに続く「半」→ 0.5（例: 大さじ半, 小さじ半）
+  line = line.replace(/(大さじ|小さじ|カップ)\s*半/gu, '$10.5');
+  // 数字の後の「半」→ 0.5（例: 1と半, 2と半）
+  line = line.replace(/(\d)\s*と\s*半(?!\d)/gu, '$1と0.5');
+
+  // 「大さじ1杯」→「大さじ1」（数字の有無に関わらず杯を除去）
+  line = line.replace(/(大さじ|小さじ)\s*([\d./]*)\s*杯/gu, (_, u, n) => u + n);
+
+  // 帯分数: 大さじ1と1/2 → 大さじ1.5（「と小さじ」形式はreCombが処理）
+  line = line.replace(/(大さじ|小さじ|カップ)\s*(\d+(?:\.\d+)?)\s*と\s*([\d./]+)/gu,
+    (_, u, whole, frac) => `${u}${parseFloat(whole) + parseFrac(frac)}`);
 
   // 組み合わせ単位: 大さじ1と小さじ1/2 / 小さじ1と大さじ1 など
   const reComb = /(大さじ|小さじ)\s*([\d./]+)\s*(?:と|＋|\+)?\s*(大さじ|小さじ)\s*([\d./]+)\s*$/u;
