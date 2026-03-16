@@ -267,10 +267,17 @@ function unitToGrams(num, unit, name) {
       if (name.includes('ミックスベジタブル'))                return num*200;
       return num*200;
     case '缶':
-      if (name.includes('トマト'))                            return num*400;
-      if (name.includes('ツナ') || name.includes('まぐろ'))  return num*70;
+      if (name.includes('トマト') || name.includes('ホールトマト')) return num*400;
+      if (name.includes('ツナ') || name.includes('シーチキン') || name.includes('まぐろ')) return num*70;
       if (name.includes('サバ') || name.includes('鯖'))      return num*190;
+      if (name.includes('イワシ') || name.includes('いわし') || name.includes('鰯')) return num*150;
+      if (name.includes('さんま') || name.includes('サンマ') || name.includes('秋刀魚')) return num*150;
+      if (name.includes('鮭') || name.includes('サーモン') || name.includes('さけ')) return num*180;
       if (name.includes('コーン') || name.includes('とうもろこし')) return num*200;
+      if (name.includes('たけのこ') || name.includes('タケノコ')) return num*500;
+      if (name.includes('グリンピース'))                      return num*432;
+      if (name.includes('マッシュルーム'))                    return num*400;
+      if (name.includes('小豆') || name.includes('あずき'))  return num*430;
       if (name.includes('大豆') || name.includes('豆'))      return num*200;
       return num*200;
     case '棒':
