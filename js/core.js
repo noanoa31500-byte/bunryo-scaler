@@ -58,6 +58,13 @@ function parseLine(line) {
   line = line.replace(/／/g, '/');
   line = line.replace(/　/g, ' ');
 
+  // 単位の表記揺れ正規化（ひらがな・カタカナ・略称）
+  line = line.replace(/おおさじ|大匙|大スプーン/g, '大さじ');
+  line = line.replace(/こさじ|小匙|小スプーン/g, '小さじ');
+  line = line.replace(/カップ|コップ|cup/gi, 'カップ');
+  line = line.replace(/テーブルスプーン|tbsp\.?|Tbsp\.?/g, '大さじ');
+  line = line.replace(/ティースプーン|tsp\.?/g, '小さじ');
+
   // 漢数字・分量表現の正規化
   line = line.replace(/一/g,'1').replace(/二/g,'2').replace(/三/g,'3')
              .replace(/四/g,'4').replace(/五/g,'5').replace(/六/g,'6')
