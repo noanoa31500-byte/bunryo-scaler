@@ -49,6 +49,32 @@ function parseLine(line) {
   line = line.replace(/／/g, '/');
   line = line.replace(/　/g, ' ');
 
+  // 漢数字・分量表現の正規化
+  line = line.replace(/一/g,'1').replace(/二/g,'2').replace(/三/g,'3')
+             .replace(/四/g,'4').replace(/五/g,'5').replace(/六/g,'6')
+             .replace(/七/g,'7').replace(/八/g,'8').replace(/九/g,'9')
+             .replace(/半(?=杯|$|\s)/g,'0.5');
+  // 「大さじ1杯」→「大さじ1」（杯は助数詞として除去）
+  line = line.replace(/(大さじ|小さじ)\s*([\d./]+)\s*杯/gu, '$1$2');
+
+  // 組み合わせ単位: 大さじ1と小さじ1/2 / 小さじ1と大さじ1 など
+  const reComb = /(大さじ|小さじ)\s*([\d./]+)\s*(?:と|＋|\+)?\s*(大さじ|小さじ)\s*([\d./]+)\s*$/u;
+  const mComb = line.match(reComb);
+  if (mComb) {
+    const nameEnd = mComb.index;
+    const combName = line.slice(0, nameEnd).replace(/[\s：:]+$/, '').trim();
+    if (combName) {
+      return {
+        name: combName, numStr: null, unit: 'combined',
+        combined: [
+          { num: parseFrac(mComb[2]), unit: mComb[1] },
+          { num: parseFrac(mComb[4]), unit: mComb[3] },
+        ],
+        suffix: '', isAmbiguous: false, ambiguousNote: null,
+      };
+    }
+  }
+
   // 曖昧分量（少々・適量など）は先に処理
   const ambigMap = { '少々':'約0.5g','ひとつまみ':'約1g','適量':'（目安：少々〜小さじ1）','少量':'約1〜2g' };
   for (const [w, note] of Object.entries(ambigMap)) {
@@ -277,6 +303,24 @@ function calcNutrition(grams, name) {
 
 function scaleIngredient(parsed, ratio) {
   const { name, numStr, unit, suffix, isAmbiguous, ambiguousNote, isMountain } = parsed;
+
+  // 組み合わせ単位（大さじN+小さじM）
+  if (unit === 'combined' && parsed.combined) {
+    const parts = parsed.combined
+      .map(p => ({ num: p.num * ratio, unit: p.unit }))
+      .filter(p => p.num > 0);
+    const display = parts.map(p => {
+      if (p.unit === '大さじ') return `大さじ ${fmtN(p.num)}`;
+      if (p.unit === '小さじ') return `小さじ ${fmtN(p.num)}`;
+      return `${fmtN(p.num)}${p.unit}`;
+    }).join('と');
+    const grams = parts.reduce((sum, p) => {
+      const g = unitToGrams(p.num, p.unit, name);
+      return g !== null ? sum + g : sum;
+    }, 0);
+    return { display, note: null, grams: grams > 0 ? grams : null };
+  }
+
   if (isAmbiguous) return { display:unit, note:ambiguousNote, grams:null };
   if (isMountain) {
     if (numStr) { const sc = parseFrac(numStr)*ratio; return { display:`山盛り ${fmtN(sc)}${unit!=='山盛り'?unit:''}`, note:'通常の約1.5倍', grams:null }; }
