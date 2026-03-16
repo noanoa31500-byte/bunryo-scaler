@@ -172,6 +172,9 @@ function applyFoodAliases(name) {
   return name;
 }
 
+// 鶏肉の皮設定（'with'=皮あり, 'without'=皮なし）
+var _chickenSkinPref = 'with';
+
 // 肉類: ユーザーの入力を [species, cut] トークンに分解して複合検索
 var MEAT_SPECIES = [
   [/鶏|とり肉|チキン|手羽/, 'にわとり'],
@@ -216,6 +219,9 @@ function wordIncludes(str, q) {
   return idx === 0 || before === ' ' || before === '）' || before === '＞' || before === ']';
 }
 
+// 皮の有無を選べる部位（ひき肉・ささみ・レバー等は皮なし固定なので除外）
+var SKIN_CUTS = ['もも', 'むね', '手羽'];
+
 function findInFoodDB(name) {
   // 肉類チェック（FOOD_ALIASESより先に判定）
   for (const [spPat, spRep] of MEAT_SPECIES) {
@@ -226,6 +232,12 @@ function findInFoodDB(name) {
       }
       let pool = foodDBEntries.filter(e => e[0].includes(spRep));
       if (cut) pool = pool.filter(e => e[0].includes(cut));
+      // 鶏肉の皮あり/皮なし対応（もも・むね・手羽のみ）
+      if (spRep === 'にわとり' && (cut === null || SKIN_CUTS.some(sc => cut.includes(sc)))) {
+        const skinKw = _chickenSkinPref === 'without' ? '皮なし' : '皮つき';
+        const skinPool = pool.filter(e => e[0].includes(skinKw));
+        if (skinPool.length > 0) pool = skinPool;
+      }
       if (pool.length > 0) return toNutrObj(pickRaw(pool));
       const fb = foodDBEntries.filter(e => e[0].includes(spRep));
       if (fb.length > 0) return toNutrObj(pickRaw(fb));
@@ -281,8 +293,7 @@ var nutritionDB = {
   "パスタ":     {kcal:378,p:13.0,f:1.9,  c:72.2, s:2},
   "うどん":     {kcal:270,p:6.1, f:0.6,  c:56.8, s:500},
   "そば":       {kcal:274,p:9.8, f:1.0,  c:54.0, s:50},
-  "鶏もも肉":   {kcal:204,p:16.6,f:14.2, c:0,    s:70},
-  "鶏むね肉":   {kcal:133,p:23.3,f:1.9,  c:0,    s:42},
+  // 鶏もも肉・鶏むね肉は皮あり/皮なし切り替えのためfindInFoodDB経由で取得
   "豚バラ肉":   {kcal:395,p:14.4,f:35.4, c:0.1,  s:55},
   "牛肉":       {kcal:272,p:17.1,f:22.3, c:0.3,  s:55},
   "卵":         {kcal:151,p:12.3,f:10.3, c:0.3,  s:140},

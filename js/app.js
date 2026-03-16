@@ -687,6 +687,11 @@ var dietSafe = {
 var _activeDiets = new Set();
 var _lastResults = [];
 
+function setChickenSkin(pref) {
+  _chickenSkinPref = pref;
+  convert();
+}
+
 function toggleDiet(key) {
   if (_activeDiets.has(key)) {
     _activeDiets.delete(key);

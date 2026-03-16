@@ -416,6 +416,15 @@ function renderResult(results, ratio, from, to, sodiumData) {
   document.getElementById('dietBar').style.display = 'flex';
   applyDietHighlight();
 
+  // 鶏肉の皮トグル（もも・むね・手羽を含む場合のみ表示）
+  const hasChickenSkin = results.some(r => /鶏|チキン|手羽/.test(r.name) && /もも|むね|手羽/.test(r.name));
+  const skinBar = document.getElementById('skinBar');
+  if (skinBar) {
+    skinBar.style.display = hasChickenSkin ? 'flex' : 'none';
+    document.getElementById('chip-skin-with').classList.toggle('active', _chickenSkinPref === 'with');
+    document.getElementById('chip-skin-without').classList.toggle('active', _chickenSkinPref === 'without');
+  }
+
   const totalRow = document.getElementById('totalRow');
   if (hasKcal) {
     totalRow.style.display = 'flex';

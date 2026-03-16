@@ -90,6 +90,12 @@
       <span class="card-title"><span class="dot"></span>変換結果</span>
       <span class="scale-badge" id="scaleBadge"></span>
     </div>
+    <!-- CHICKEN SKIN TOGGLE -->
+    <div class="diet-bar" id="skinBar" style="display:none;">
+      <span style="font-size:11px;color:var(--text3);margin-right:2px;">鶏肉の皮</span>
+      <button class="diet-chip active" id="chip-skin-with"    onclick="setChickenSkin('with')">皮あり</button>
+      <button class="diet-chip"        id="chip-skin-without" onclick="setChickenSkin('without')">皮なし</button>
+    </div>
     <!-- DIET PROFILE BAR -->
     <div class="diet-bar" id="dietBar" style="display:none;">
       <button class="diet-chip" id="chip-gf"   onclick="toggleDiet('gf')">グルテンフリー</button>
