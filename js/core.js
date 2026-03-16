@@ -438,8 +438,6 @@ function getSubstitute(name) {
 function renderResult(results, ratio, from, to, sodiumData) {
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('resultCard').style.display = 'block';
-  document.getElementById('saveBtn').style.display   = 'inline-flex';
-  document.getElementById('qrBtn').style.display    = 'inline-flex';
   document.getElementById('printBtn').style.display = 'inline-flex';
 
   document.getElementById('scaleBadge').textContent = `${from}人前 → ${to}人前  ×${fmtN(ratio)}`;

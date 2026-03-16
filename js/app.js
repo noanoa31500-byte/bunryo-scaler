@@ -145,7 +145,8 @@ function clearAll() {
   document.getElementById('bakerCard').style.display = 'none';
   document.getElementById('bakerFlourG').value = '';
   document.getElementById('costSection').style.display = 'none';
-  ['sc_input','sc_from','sc_to'].forEach(k => localStorage.removeItem(k));
+  sessionStorage.removeItem('sc_input');
+  ['sc_from','sc_to'].forEach(k => localStorage.removeItem(k));
 }
 
 // ══════════════════════════════════════════
@@ -576,13 +577,15 @@ function loadFromHash() {
 // ══════════════════════════════════════════
 
 function saveStorage() {
-  localStorage.setItem('sc_input', document.getElementById('ingredientInput').value);
-  localStorage.setItem('sc_from',  document.getElementById('fromPerson').value);
-  localStorage.setItem('sc_to',    document.getElementById('toPerson').value);
+  // 入力テキストはsessionStorage（タブを閉じると自動クリア）
+  sessionStorage.setItem('sc_input', document.getElementById('ingredientInput').value);
+  // 人数設定はlocalStorage（次回も引き継ぐ）
+  localStorage.setItem('sc_from', document.getElementById('fromPerson').value);
+  localStorage.setItem('sc_to',   document.getElementById('toPerson').value);
 }
 
 function loadStorage() {
-  const inp  = localStorage.getItem('sc_input');
+  const inp  = sessionStorage.getItem('sc_input');
   const from = localStorage.getItem('sc_from');
   const to   = localStorage.getItem('sc_to');
   if (from) document.getElementById('fromPerson').value = from;
